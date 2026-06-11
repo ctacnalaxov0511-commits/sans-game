@@ -10,8 +10,19 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <!-- ВЕРСИЯ ИГРЫ -->
-    <div class="version-info">GitTale v0.0.4</div>
+    <!-- ВЕРСИЯ ИГРЫ (только на ПК) -->
+    <div class="version-info pc-only">GitTale v0.0.5</div>
+    
+    <!-- HUD (только на ПК) -->
+    <div class="hud pc-only">
+        <div class="health-bar"><span class="heart">❤️</span><span id="hpValue">24</span><span>/24</span></div>
+        <div class="abilities-hud">
+            <div class="ability-hud" id="skill1Hud"><span class="key">1</span><span class="skill-name">КОСТЬ</span><span class="damage">10</span></div>
+            <div class="ability-hud" id="skill2Hud"><span class="key">2</span><span class="skill-name">ГАСТЕР</span><span class="damage">50</span></div>
+            <div class="ability-hud" id="skill3Hud"><span class="key">3</span><span class="skill-name">ЗАЛП</span><span class="damage">30</span></div>
+        </div>
+        <div class="dash-hud" id="dashHud"><span class="dash-icon">⚡</span><span id="dashReady">ГОТОВ</span></div>
+    </div>
     
     <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ -->
     <div id="mobileControls" class="mobile-controls">
@@ -28,7 +39,7 @@
     </div>
     
     <button id="menuButton" class="menu-button">☰</button>
-    <button id="fullscreenBtn" class="fullscreen-btn">🖥️</button>
+    <button id="fullscreenBtn" class="fullscreen-btn pc-only">🖥️</button>
     
     <div id="menuWindow" class="menu-window">
         <div class="menu-window-header"><h3>📋 МЕНЮ</h3></div>
@@ -36,16 +47,6 @@
             <button id="resumeGameBtn" class="menu-btn resume-btn">▶ ВЕРНУТЬСЯ В ИГРУ</button>
             <button id="exitGameBtn" class="menu-btn exit-btn">🚪 ВЫЙТИ</button>
         </div>
-    </div>
-    
-    <div class="hud">
-        <div class="health-bar"><span class="heart">❤️</span><span id="hpValue">24</span><span>/24</span></div>
-        <div class="abilities-hud">
-            <div class="ability-hud" id="skill1Hud"><span class="key">1</span><span class="skill-name">КОСТЬ</span><span class="damage">10</span></div>
-            <div class="ability-hud" id="skill2Hud"><span class="key">2</span><span class="skill-name">ГАСТЕР</span><span class="damage">50</span></div>
-            <div class="ability-hud" id="skill3Hud"><span class="key">3</span><span class="skill-name">ЗАЛП</span><span class="damage">30</span></div>
-        </div>
-        <div class="dash-hud" id="dashHud"><span class="dash-icon">⚡</span><span id="dashReady">ГОТОВ</span></div>
     </div>
     
     <div id="infoWindow" class="ui-window">
@@ -61,7 +62,7 @@
             <p>Гастеров: <span id="statGaster" class="stat-number">0</span></p>
             <hr><p>💡 Клик по лампе — вкл/выкл</p>
             <p>📌 Нажми E у таблички</p>
-            <p>🎮 GitTale v0.0.4</p>
+            <p>🎮 GitTale v0.0.5</p>
         </div>
     </div>
     
