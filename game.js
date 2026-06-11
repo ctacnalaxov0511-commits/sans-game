@@ -1,4 +1,4 @@
-// ========== МАКСИМАЛЬНО ОПТИМИЗИРОВАННАЯ ВЕРСИЯ ==========
+// ========== МАКСИМАЛЬНО ОПТИМИЗИРОВАННАЯ ВЕРСИЯ С МЕНЮ ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -17,7 +17,6 @@ const MAP_H = 2500;
 // FPS ОГРАНИЧЕНИЕ
 let lastFrameTime = 0;
 const FRAME_DELAY = 1000 / 60; // 60 FPS
-let frameSkip = 0;
 
 // КАМЕРА
 let camera = { x: 0, y: 0 };
@@ -223,7 +222,7 @@ function updateLightSources() {
 
 function drawDynamicLighting() {
     lightingCounter++;
-    if(lightingCounter % 2 !== 0) return; // каждый 2-й кадр
+    if(lightingCounter % 2 !== 0) return;
     
     ctx.fillStyle = `rgba(0,0,0,${ambientDarkness})`;
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
@@ -830,7 +829,7 @@ function drawDirectionLine() {
 
 function updateLighting() { updateLightSources(); }
 
-// ========== ОКНО ==========
+// ========== ОКНО СТАТИСТИКИ ==========
 const infoWindow = document.getElementById('infoWindow');
 const closeBtn = document.getElementById('closeWindowBtn');
 function openInfoWindow() { if(!windowOpen) { updateStatsUI(); infoWindow.style.display = 'flex'; windowOpen = true; } }
@@ -841,6 +840,61 @@ window.addEventListener('keydown', (e) => {
     if(e.key === 'e' || e.key === 'E') {
         if(isPlayerNearSign() && !windowOpen) { e.preventDefault(); openInfoWindow(); }
         else if(windowOpen) { closeInfoWindow(); }
+    }
+});
+
+// ========== МЕНЮ (СПРАВА ПО ЦЕНТРУ) ==========
+const menuButton = document.getElementById('menuButton');
+const menuWindow = document.getElementById('menuWindow');
+const resumeBtn = document.getElementById('resumeGameBtn');
+const exitBtn = document.getElementById('exitGameBtn');
+
+let isMenuOpen = false;
+let gamePaused = false;
+
+function openMenu() {
+    if(isMenuOpen) return;
+    isMenuOpen = true;
+    gamePaused = true;
+    menuWindow.style.display = 'flex';
+    const overlay = document.createElement('div');
+    overlay.id = 'menuOverlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 999;
+    `;
+    document.body.appendChild(overlay);
+}
+
+function closeMenu() {
+    if(!isMenuOpen) return;
+    isMenuOpen = false;
+    gamePaused = false;
+    menuWindow.style.display = 'none';
+    const overlay = document.getElementById('menuOverlay');
+    if(overlay) overlay.remove();
+}
+
+resumeBtn.addEventListener('click', () => { closeMenu(); });
+
+exitBtn.addEventListener('click', () => {
+    if(confirm('Вы уверены, что хотите выйти из игры?')) {
+        window.close();
+        window.location.href = "about:blank";
+    }
+});
+
+menuButton.addEventListener('click', () => { openMenu(); });
+
+window.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') {
+        if(isMenuOpen) { closeMenu(); }
+        else { openMenu(); }
     }
 });
 
@@ -906,7 +960,7 @@ updateCamera();
 updateHealthUI();
 updateDashUI();
 
-// ========== ГЛАВНЫЙ ЦИКЛ С FPS ОГРАНИЧЕНИЕМ ==========
+// ========== ГЛАВНЫЙ ЦИКЛ С FPS ОГРАНИЧЕНИЕМ И ПАУЗОЙ ==========
 function gameUpdate() { 
     updateMovement(); 
     updateProjectiles(); 
@@ -938,7 +992,10 @@ function loop(currentTime) {
     requestAnimationFrame(loop);
     if(currentTime - lastFrameTime < FRAME_DELAY) return;
     lastFrameTime = currentTime;
-    gameUpdate();
+    
+    if(!gamePaused) {
+        gameUpdate();
+    }
     render();
 }
 
