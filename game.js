@@ -1,4 +1,5 @@
-// ========== GitTale v0.0.3 ==========
+// ========== GitTale v0.0.4 ==========
+// Полная версия с поддержкой ПК и мобильных устройств
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -76,7 +77,6 @@ function generateTrees() {
     }
 }
 
-// Проверка коллизии с деревьями
 function checkTreeCollision(newX, newY) {
     for(let tree of treeCollision) {
         const dx = newX - tree.x;
@@ -89,7 +89,6 @@ function checkTreeCollision(newX, newY) {
     return false;
 }
 
-// Отрисовка деревьев (БЕЗ ЗАТЕМНЕНИЯ)
 function drawTrees() {
     for(let tree of trees) {
         const sx = tree.x - camera.x;
@@ -97,12 +96,10 @@ function drawTrees() {
         
         if(sx + 64 < -50 || sx > SCREEN_W + 50 || sy + 128 < -50 || sy > SCREEN_H + 50) continue;
         
-        // Нижняя часть дерева
         if(sprites.fir && sprites.fir.complete) {
             ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
         }
         
-        // Верхняя часть дерева (исходный цвет)
         if(sprites.fir2 && sprites.fir2.complete) {
             ctx.drawImage(sprites.fir2, sx - 24, sy - 96, 80, 96);
         }
@@ -449,24 +446,6 @@ function updateCursor(clientX, clientY) {
     player.angle = Math.atan2(cursorWorld.y - player.y, cursorWorld.x - player.x);
 }
 
-canvas.addEventListener('mousemove', (e) => { mouseInCanvas = true; updateCursor(e.clientX, e.clientY); });
-canvas.addEventListener('mouseleave', () => { mouseInCanvas = false; });
-canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-    const sx = (e.clientX - rect.left) * scaleX, sy = (e.clientY - rect.top) * scaleY;
-    checkLampClick(sx + camera.x, sy + camera.y);
-});
-canvas.addEventListener('touchmove', (e) => { e.preventDefault(); updateCursor(e.touches[0].clientX, e.touches[0].clientY); });
-canvas.addEventListener('touchstart', (e) => { 
-    e.preventDefault(); 
-    updateCursor(e.touches[0].clientX, e.touches[0].clientY);
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-    const sx = (e.touches[0].clientX - rect.left) * scaleX, sy = (e.touches[0].clientY - rect.top) * scaleY;
-    checkLampClick(sx + camera.x, sy + camera.y);
-});
-
 // ========== АТАКИ ==========
 function castBoneShot() {
     if(cooldowns.skill1 > 0) return;
@@ -564,7 +543,6 @@ function updateMovement() {
     let nx = player.x + dx * curSpeed, ny = player.y + dy * curSpeed;
     const prevX = player.x, prevY = player.y;
     
-    // ПРОВЕРКА КОЛЛИЗИИ С ДЕРЕВЬЯМИ
     if(!checkTreeCollision(nx, ny)) {
         player.x = Math.min(Math.max(nx, player.radius+20), MAP_W - player.radius-20);
         player.y = Math.min(Math.max(ny, player.radius+20), MAP_H - player.radius-20);
@@ -705,8 +683,107 @@ exitBtn.addEventListener('click', () => { if(confirm('Вы уверены, чт�
 menuButton.addEventListener('click', () => { openMenu(); });
 window.addEventListener('keydown', (e) => { if(e.key === 'Escape') { if(isMenuOpen) closeMenu(); else openMenu(); } });
 
-// ========== УПРАВЛЕНИЕ ==========
+// ========== УПРАВЛЕНИЕ (ПК + МОБИЛЬНОЕ ОБНАРУЖЕНИЕ) ==========
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+window.disableKeyboard = false;
+
+if (isMobile) {
+    const mobileControls = document.getElementById('mobileControls');
+    if (mobileControls) mobileControls.classList.add('visible');
+    window.disableKeyboard = true;
+    
+    // Джойстик
+    const joystickBase = document.getElementById('joystickBase');
+    const joystickThumb = document.getElementById('joystickThumb');
+    const maxDist = 35;
+    let joystickActive = false;
+    let joystickVector = { x: 0, y: 0 };
+    
+    function getTouchPos(touch) {
+        const rect = joystickBase.getBoundingClientRect();
+        return {
+            x: touch.clientX - rect.left - rect.width / 2,
+            y: touch.clientY - rect.top - rect.height / 2
+        };
+    }
+    
+    function updateJoystick(touchX, touchY) {
+        let dx = touchX;
+        let dy = touchY;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist > maxDist) {
+            dx = dx / dist * maxDist;
+            dy = dy / dist * maxDist;
+        }
+        
+        joystickThumb.style.transform = `translate(${dx}px, ${dy}px)`;
+        joystickVector.x = dx / maxDist;
+        joystickVector.y = dy / maxDist;
+        
+        move.left = joystickVector.x < -0.2;
+        move.right = joystickVector.x > 0.2;
+        move.up = joystickVector.y < -0.2;
+        move.down = joystickVector.y > 0.2;
+    }
+    
+    function resetJoystick() {
+        joystickThumb.style.transform = 'translate(0px, 0px)';
+        joystickVector = { x: 0, y: 0 };
+        move.left = false;
+        move.right = false;
+        move.up = false;
+        move.down = false;
+    }
+    
+    joystickBase.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystickActive = true;
+        const pos = getTouchPos(e.touches[0]);
+        updateJoystick(pos.x, pos.y);
+    });
+    
+    joystickBase.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!joystickActive) return;
+        const pos = getTouchPos(e.touches[0]);
+        updateJoystick(pos.x, pos.y);
+    });
+    
+    joystickBase.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        joystickActive = false;
+        resetJoystick();
+    });
+    
+    // Кнопки атак
+    const skillBtns = document.querySelectorAll('.skill-btn');
+    skillBtns.forEach(btn => {
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const skill = btn.getAttribute('data-skill');
+            if (skill === '1') castBoneShot();
+            if (skill === '2') castGasterBlaster();
+            if (skill === '3') castBoneVolley();
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => { btn.style.transform = ''; }, 100);
+        });
+    });
+    
+    // Рывок по двойному тапу на джойстик
+    let lastTap = 0;
+    joystickBase.addEventListener('touchstart', (e) => {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+            dashAction();
+        }
+        lastTap = now;
+    });
+}
+
+// Обработчики клавиатуры (только для ПК)
 window.addEventListener('keydown', (e) => {
+    if (window.disableKeyboard) return;
     const k = e.key;
     if(k === 'w' || k === 'W') move.up = true;
     if(k === 's' || k === 'S') move.down = true;
@@ -722,7 +799,9 @@ window.addEventListener('keydown', (e) => {
     if(k === '3') { e.preventDefault(); castBoneVolley(); }
     if(k === 'r' || k === 'R') { resetGame(); addFloatingText("❤️ ЗДОРОВЬЕ ВОССТАНОВЛЕНО", player.x-80, player.y-40, "#aaffaa", true); }
 });
+
 window.addEventListener('keyup', (e) => {
+    if (window.disableKeyboard) return;
     const k = e.key;
     if(k === 'w' || k === 'W') move.up = false;
     if(k === 's' || k === 'S') move.down = false;
@@ -733,6 +812,30 @@ window.addEventListener('keyup', (e) => {
     if(k === 'ф' || k === 'Ф') move.left = false;
     if(k === 'в' || k === 'В') move.right = false;
 });
+
+canvas.addEventListener('mousemove', (e) => { 
+    if (!isMobile) {
+        mouseInCanvas = true; 
+        updateCursor(e.clientX, e.clientY); 
+    }
+});
+canvas.addEventListener('mouseleave', () => { mouseInCanvas = false; });
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+    const sx = (e.clientX - rect.left) * scaleX, sy = (e.clientY - rect.top) * scaleY;
+    checkLampClick(sx + camera.x, sy + camera.y);
+});
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (!isMobile) updateCursor(e.touches[0].clientX, e.touches[0].clientY); });
+canvas.addEventListener('touchstart', (e) => { 
+    e.preventDefault(); 
+    if (!isMobile) updateCursor(e.touches[0].clientX, e.touches[0].clientY);
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+    const sx = (e.touches[0].clientX - rect.left) * scaleX, sy = (e.touches[0].clientY - rect.top) * scaleY;
+    checkLampClick(sx + camera.x, sy + camera.y);
+});
+
 canvas.addEventListener('click', () => canvas.focus());
 canvas.focus();
 
