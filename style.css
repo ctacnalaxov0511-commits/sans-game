@@ -1,168 +1,42 @@
-* {
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    overflow: hidden;
-    background: #0a0e1a;
-    font-family: 'Courier New', monospace;
-}
-
-canvas {
-    display: block;
+/* ========== КНОПКА МЕНЮ (СПРАВА ПО ЦЕНТРУ) ========== */
+.menu-button {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #2a3a3a;
-    cursor: crosshair;
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-}
-
-/* ========== HUD ПОВЕРХ ИГРЫ ========== */
-.hud {
-    position: fixed;
-    top: 20px;
-    left: 20px;
     right: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-    z-index: 100;
-    pointer-events: none;
-}
-
-.hud > * {
-    pointer-events: auto;
-}
-
-/* Панель здоровья */
-.health-bar {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(8px);
-    padding: 8px 18px;
-    border-radius: 40px;
-    border: 1px solid #ff6688;
-    color: #ffaa88;
-    font-weight: bold;
-    font-size: 18px;
-    font-family: monospace;
-    letter-spacing: 1px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-.heart {
-    color: #ff3366;
-    margin-right: 6px;
-    font-size: 18px;
-}
-
-/* Способности HUD */
-.abilities-hud {
-    display: flex;
-    gap: 12px;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    padding: 6px 16px;
-    border-radius: 50px;
-    border: 1px solid rgba(100,200,255,0.4);
-}
-
-.ability-hud {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: linear-gradient(135deg, #1e4a5f, #0e2a38);
-    padding: 5px 14px;
-    border-radius: 40px;
-    font-size: 13px;
-    font-weight: bold;
-    border: 1px solid rgba(100,200,255,0.3);
-    transition: 0.1s;
-}
-
-.ability-hud .key {
-    background: #000000aa;
-    padding: 2px 6px;
-    border-radius: 20px;
-    color: #ffd966;
-    font-size: 12px;
-}
-
-.ability-hud .skill-name {
-    color: #e0e0e0;
-}
-
-.ability-hud .damage {
+    border: 2px solid #ffaa66;
+    border-radius: 50%;
     color: #ffaa66;
-    font-size: 11px;
-}
-
-.ability-hud.cooldown-active {
-    opacity: 0.5;
-    filter: grayscale(0.3);
-}
-
-/* Рывок HUD */
-.dash-hud {
-    background: rgba(0, 0, 0, 0.75);
-    backdrop-filter: blur(8px);
-    padding: 8px 18px;
-    border-radius: 40px;
-    border: 1px solid #88ccff;
-    color: #88ccff;
+    font-size: 28px;
     font-weight: bold;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.dash-icon {
-    font-size: 16px;
-}
-
-/* Кнопка полноэкранного режима */
-.fullscreen-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
-    border: 1px solid #ffaa66;
-    color: #ffaa66;
-    padding: 10px 15px;
-    border-radius: 30px;
-    font-family: monospace;
-    font-size: 18px;
     cursor: pointer;
     z-index: 200;
-    transition: 0.2s;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
 }
 
-.fullscreen-btn:hover {
-    background: rgba(255,170,102,0.3);
+.menu-button:hover {
+    background: rgba(255, 170, 102, 0.3);
+    transform: translateY(-50%) scale(1.05);
+    border-color: #ffcc88;
     color: #ffcc88;
 }
 
-/* Окно статистики */
-.ui-window {
+/* ========== ОКНО МЕНЮ ========== */
+.menu-window {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 350px;
-    max-width: 90vw;
+    width: 320px;
+    max-width: 85vw;
     background: #0a0f1a;
     border: 3px solid #ffcc88;
     border-radius: 20px;
@@ -171,113 +45,61 @@ canvas {
     display: none;
     flex-direction: column;
     font-family: 'Courier New', monospace;
+    backdrop-filter: blur(4px);
 }
 
-.ui-window-header {
+.menu-window-header {
     background: #1a2a2a;
-    padding: 10px 15px;
+    padding: 12px 15px;
     border-bottom: 2px solid #ffaa66;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    text-align: center;
     border-radius: 17px 17px 0 0;
 }
 
-.ui-window-header h3 {
+.menu-window-header h3 {
     color: #ffdd99;
     margin: 0;
-    font-size: 16px;
-}
-
-.ui-window-close {
-    background: #5a2a2a;
-    border: none;
-    color: #ffaa88;
     font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
+}
+
+.menu-window-content {
+    padding: 20px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    gap: 15px;
 }
 
-.ui-window-close:hover {
-    background: #8a3a3a;
-    color: white;
-}
-
-.ui-window-content {
-    padding: 15px;
-    color: #e0e0e0;
-    background: #0f1420;
-    border-radius: 0 0 17px 17px;
-    font-size: 12px;
-    line-height: 1.5;
-}
-
-.ui-window-content p {
-    margin: 6px 0;
-}
-
-.ui-window-content hr {
-    border-color: #3a4a5a;
-    margin: 8px 0;
-}
-
-.stat-number {
-    color: #ffaa66;
-    font-weight: bold;
+.menu-btn {
+    padding: 12px 20px;
+    border-radius: 40px;
     font-size: 16px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
 }
 
-/* Подсказка для E */
-.e-prompt {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(8px);
-    padding: 6px 12px;
-    border-radius: 20px;
-    color: #ffffaa;
-    font-size: 12px;
-    font-family: monospace;
-    z-index: 100;
-    pointer-events: none;
-    display: none;
+.resume-btn {
+    background: linear-gradient(135deg, #1e4a5f, #0e2a38);
+    color: #88ddff;
+    border: 1px solid #88ddff;
 }
 
-.e-prompt.show {
-    display: block;
+.resume-btn:hover {
+    background: linear-gradient(135deg, #2e6a7f, #1e3a48);
+    transform: scale(1.02);
+    color: #aaffff;
 }
 
-/* Адаптация для маленьких экранов */
-@media (max-width: 800px) {
-    .health-bar {
-        padding: 5px 12px;
-        font-size: 14px;
-    }
-    .abilities-hud {
-        gap: 6px;
-        padding: 4px 10px;
-    }
-    .ability-hud {
-        padding: 3px 8px;
-        font-size: 10px;
-    }
-    .ability-hud .key {
-        font-size: 10px;
-        padding: 1px 4px;
-    }
-    .dash-hud {
-        padding: 5px 12px;
-        font-size: 11px;
-    }
-    .fullscreen-btn {
-        padding: 8px 12px;
-        font-size: 14px;
-    }
+.exit-btn {
+    background: linear-gradient(135deg, #5a1a1a, #3a0a0a);
+    color: #ffaa88;
+    border: 1px solid #ff8866;
+}
+
+.exit-btn:hover {
+    background: linear-gradient(135deg, #7a2a2a, #5a1a1a);
+    transform: scale(1.02);
+    color: #ffccaa;
 }
