@@ -1,4 +1,4 @@
-// ========== GitTale v0.0.2 ==========
+// ========== GitTale v0.0.3 ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -27,15 +27,126 @@ function isOnScreen(wx, wy, margin = 100) {
             wy + margin > camera.y && wy - margin < camera.y + SCREEN_H);
 }
 
+// ========== КОЛЛИЗИЯ С ДЕРЕВЬЯМИ ==========
+let trees = [];
+let treeCollision = [];
+
+function generateTrees() {
+    trees = [];
+    treeCollision = [];
+    
+    function isTooCloseToPath(x, y, margin = 40) {
+        for(let tile of pathTiles) {
+            if(Math.abs(x - tile.x) < margin && Math.abs(y - tile.y) < margin) return true;
+        }
+        return false;
+    }
+    
+    function isTooCloseToOtherTrees(x, y, margin = 80) {
+        for(let tree of trees) {
+            if(Math.abs(x - tree.x) < margin && Math.abs(y - tree.y) < margin) return true;
+        }
+        return false;
+    }
+    
+    const treeCount = 80;
+    
+    for(let i = 0; i < treeCount; i++) {
+        let attempts = 0;
+        let placed = false;
+        
+        while(!placed && attempts < 50) {
+            const x = 80 + Math.random() * (MAP_W - 160);
+            const y = 80 + Math.random() * (MAP_H - 160);
+            
+            if(!isTooCloseToPath(x, y, 50) && !isTooCloseToOtherTrees(x, y, 70)) {
+                const distToDummy = Math.hypot(x - dummyObj.x, y - dummyObj.y);
+                const distToSign = Math.hypot(x - sign.x, y - sign.y);
+                const distToSpawn = Math.hypot(x - MAP_W/2, y - MAP_H/2);
+                const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 100);
+                
+                if(distToDummy > 100 && distToSign > 100 && distToSpawn > 100 && !distToLamp) {
+                    trees.push({ x, y });
+                    treeCollision.push({ x, y, radius: 28 });
+                    placed = true;
+                }
+            }
+            attempts++;
+        }
+    }
+}
+
+// Проверка коллизии с деревьями
+function checkTreeCollision(newX, newY) {
+    for(let tree of treeCollision) {
+        const dx = newX - tree.x;
+        const dy = newY - tree.y;
+        const dist = Math.hypot(dx, dy);
+        if(dist < player.radius + tree.radius) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Отрисовка деревьев (с затемнением)
+function drawTrees() {
+    for(let tree of trees) {
+        const sx = tree.x - camera.x;
+        const sy = tree.y - camera.y;
+        
+        if(sx + 64 < -50 || sx > SCREEN_W + 50 || sy + 128 < -50 || sy > SCREEN_H + 50) continue;
+        
+        // Нижняя часть дерева
+        if(sprites.fir && sprites.fir.complete) {
+            ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
+        }
+        
+        // Верхняя часть дерева (затемнённая)
+        if(sprites.fir2 && sprites.fir2.complete) {
+            ctx.drawImage(sprites.fir2, sx - 24, sy - 96, 80, 96);
+            
+            // Затемнение для создания тени/темноты
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = "rgba(40, 40, 50, 0.35)";
+            ctx.fillRect(sx - 24, sy - 96, 80, 96);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+}
+
+// ========== ТРОПИНКИ ==========
+let pathTiles = [];
+
+function generatePaths() {
+    pathTiles = [];
+    for(let x = 1500; x <= 2650; x += 32) pathTiles.push({ x: x, y: 1250 });
+    for(let x = 350; x <= 2650; x += 32) pathTiles.push({ x: x, y: 1250 });
+    for(let y = 250; y <= 1250; y += 32) pathTiles.push({ x: 350, y: y });
+    
+    const unique = [];
+    for(let tile of pathTiles) {
+        if(!unique.some(t => t.x === tile.x && t.y === tile.y)) unique.push(tile);
+    }
+    pathTiles = unique;
+}
+
+function drawPaths() {
+    for(let tile of pathTiles) {
+        const sx = tile.x - camera.x, sy = tile.y - camera.y;
+        if(sx + 32 < 0 || sx > SCREEN_W || sy + 32 < 0 || sy > SCREEN_H) continue;
+        if(sprites.dirt && sprites.dirt.complete) ctx.drawImage(sprites.dirt, sx, sy, 32, 32);
+        else { ctx.fillStyle = "#8B5A2B"; ctx.fillRect(sx, sy, 32, 32); }
+    }
+}
+
 // ========== ЗАГРУЗКА СПРАЙТОВ ==========
 const sprites = {
     sans: new Image(), dummy: new Image(), gaster: new Image(), 
     bone: new Image(), sign: new Image(), 
     lamp_on: new Image(), lamp_off: new Image(),
     grass: new Image(), grass_flower: new Image(),
-    dirt: new Image(),
-    fir: new Image(),    // НИЖНЯЯ ЧАСТЬ ДЕРЕВА
-    fir2: new Image()    // ВЕРХНЯЯ ЧАСТЬ ДЕРЕВА
+    dirt: new Image(), fir: new Image(), fir2: new Image()
 };
 
 let loadedCount = 0;
@@ -63,124 +174,6 @@ sprites.grass_flower.src = "sprites/grass_flower.png"; sprites.grass_flower.onlo
 sprites.dirt.src = "sprites/dirt.png"; sprites.dirt.onload = checkAllSpritesLoaded;
 sprites.fir.src = "sprites/fir.png"; sprites.fir.onload = checkAllSpritesLoaded;
 sprites.fir2.src = "sprites/fir2.png"; sprites.fir2.onload = checkAllSpritesLoaded;
-
-// ========== ДЕРЕВЬЯ ==========
-let trees = [];
-
-function generateTrees() {
-    trees = [];
-    
-    // Функция проверки, не пересекается ли дерево с тропинкой
-    function isTooCloseToPath(x, y, margin = 40) {
-        for(let tile of pathTiles) {
-            if(Math.abs(x - tile.x) < margin && Math.abs(y - tile.y) < margin) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    // Функция проверки, не слишком ли близко к другим деревьям
-    function isTooCloseToOtherTrees(x, y, margin = 80) {
-        for(let tree of trees) {
-            if(Math.abs(x - tree.x) < margin && Math.abs(y - tree.y) < margin) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    // Создаём деревья в случайных местах
-    const treeCount = 80;
-    
-    for(let i = 0; i < treeCount; i++) {
-        let attempts = 0;
-        let placed = false;
-        
-        while(!placed && attempts < 50) {
-            // Случайные координаты на карте (с отступом от краёв)
-            const x = 80 + Math.random() * (MAP_W - 160);
-            const y = 80 + Math.random() * (MAP_H - 160);
-            
-            // Проверяем, не рядом ли с тропинкой и не рядом ли с другими деревьями
-            if(!isTooCloseToPath(x, y, 50) && !isTooCloseToOtherTrees(x, y, 70)) {
-                // Дополнительная проверка: не слишком близко к манекену и табличке
-                const distToDummy = Math.hypot(x - dummyObj.x, y - dummyObj.y);
-                const distToSign = Math.hypot(x - sign.x, y - sign.y);
-                const distToSpawn = Math.hypot(x - MAP_W/2, y - MAP_H/2);
-                
-                if(distToDummy > 100 && distToSign > 100 && distToSpawn > 100) {
-                    trees.push({ x, y });
-                    placed = true;
-                }
-            }
-            attempts++;
-        }
-    }
-}
-
-function drawTrees() {
-    for(let tree of trees) {
-        const sx = tree.x - camera.x;
-        const sy = tree.y - camera.y;
-        
-        if(sx + 64 < 0 || sx > SCREEN_W || sy + 128 < 0 || sy > SCREEN_H) continue;
-        
-        // Рисуем нижнюю часть дерева (ствол/основание)
-        if(sprites.fir && sprites.fir.complete) {
-            ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
-        }
-        
-        // Рисуем верхнюю часть дерева (крона)
-        if(sprites.fir2 && sprites.fir2.complete) {
-            ctx.drawImage(sprites.fir2, sx - 24, sy - 96, 80, 96);
-        }
-    }
-}
-
-// ========== ТРОПИНКИ (ВРУЧНУЮ) ==========
-let pathTiles = [];
-
-function generatePaths() {
-    pathTiles = [];
-    
-    // ТРОПИНКА 1: от спавна (1500, 1250) до манекена (2650, 1250)
-    for(let x = 1500; x <= 2650; x += 32) {
-        pathTiles.push({ x: x, y: 1250 });
-    }
-    
-    // ТРОПИНКА 2: от манекена (2650, 1250) до таблички (350, 250)
-    for(let x = 350; x <= 2650; x += 32) {
-        pathTiles.push({ x: x, y: 1250 });
-    }
-    for(let y = 250; y <= 1250; y += 32) {
-        pathTiles.push({ x: 350, y: y });
-    }
-    
-    // Убираем дубликаты
-    const unique = [];
-    for(let tile of pathTiles) {
-        if(!unique.some(t => t.x === tile.x && t.y === tile.y)) {
-            unique.push(tile);
-        }
-    }
-    pathTiles = unique;
-}
-
-function drawPaths() {
-    for(let tile of pathTiles) {
-        const sx = tile.x - camera.x;
-        const sy = tile.y - camera.y;
-        if(sx + 32 < 0 || sx > SCREEN_W || sy + 32 < 0 || sy > SCREEN_H) continue;
-        
-        if(sprites.dirt && sprites.dirt.complete && sprites.dirt.naturalWidth > 0) {
-            ctx.drawImage(sprites.dirt, sx, sy, 32, 32);
-        } else {
-            ctx.fillStyle = "#8B5A2B";
-            ctx.fillRect(sx, sy, 32, 32);
-        }
-    }
-}
 
 // ========== ТАЙЛЫ ==========
 const TILE_SIZE = 32;
@@ -576,8 +569,12 @@ function updateMovement() {
     
     let nx = player.x + dx * curSpeed, ny = player.y + dy * curSpeed;
     const prevX = player.x, prevY = player.y;
-    player.x = Math.min(Math.max(nx, player.radius+20), MAP_W - player.radius-20);
-    player.y = Math.min(Math.max(ny, player.radius+20), MAP_H - player.radius-20);
+    
+    // ПРОВЕРКА КОЛЛИЗИИ С ДЕРЕВЬЯМИ
+    if(!checkTreeCollision(nx, ny)) {
+        player.x = Math.min(Math.max(nx, player.radius+20), MAP_W - player.radius-20);
+        player.y = Math.min(Math.max(ny, player.radius+20), MAP_H - player.radius-20);
+    }
     
     if(isMoving && !dash.active) {
         const moveDist = (player.x - prevX)*(player.x - prevX) + (player.y - prevY)*(player.y - prevY);
