@@ -89,7 +89,7 @@ function checkTreeCollision(newX, newY) {
     return false;
 }
 
-// Отрисовка деревьев (с затемнением)
+// Отрисовка деревьев (БЕЗ ЗАТЕМНЕНИЯ)
 function drawTrees() {
     for(let tree of trees) {
         const sx = tree.x - camera.x;
@@ -102,15 +102,9 @@ function drawTrees() {
             ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
         }
         
-        // Верхняя часть дерева (затемнённая)
+        // Верхняя часть дерева (исходный цвет, без затемнения)
         if(sprites.fir2 && sprites.fir2.complete) {
             ctx.drawImage(sprites.fir2, sx - 24, sy - 96, 80, 96);
-            
-            // Затемнение для создания тени/темноты
-            ctx.globalCompositeOperation = 'multiply';
-            ctx.fillStyle = "rgba(40, 40, 50, 0.35)";
-            ctx.fillRect(sx - 24, sy - 96, 80, 96);
-            ctx.globalCompositeOperation = 'source-over';
         }
     }
 }
@@ -654,7 +648,7 @@ function drawSans() {
         }
         ctx.globalAlpha = 1;
     }
-    if(sprites.sans.complete) { ctx.translate(sx, sy); ctx.rotate(player.angle + Math.PI/2); ctx.drawImage(sprites.sans, -26, -26, 52, 52); }
+    if(sprites.sans.complete) { ctx.translate(sx, sy); ctx.rotate(player.angle + Math.PI/2); ctx.drawImage(sprites.sans, -26, -26, 52, Banay); }
     ctx.restore();
     if(player.invincible > 0 && (Math.floor(Date.now() / 50) % 4 < 2)) { ctx.beginPath(); ctx.arc(sx, sy-2, 30, 0, Math.PI*2); ctx.strokeStyle = "#ffecb3"; ctx.lineWidth = 2.5; ctx.stroke(); }
     const ex = Math.cos(player.angle)*26, ey = Math.sin(player.angle)*26;
