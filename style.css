@@ -1,3 +1,158 @@
+* {
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #0a0e1a;
+    font-family: 'Courier New', monospace;
+}
+
+canvas {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #2a3a3a;
+    cursor: crosshair;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    z-index: 1;
+}
+
+/* ========== ВЕРСИЯ ========== */
+.version-info {
+    position: fixed;
+    bottom: 15px;
+    left: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: monospace;
+    color: #88aacc;
+    z-index: 200;
+    pointer-events: none;
+}
+
+/* ========== HUD ========== */
+.hud {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.hud > * {
+    pointer-events: auto;
+}
+
+.health-bar {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    padding: 8px 18px;
+    border-radius: 40px;
+    border: 1px solid #ff6688;
+    color: #ffaa88;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.heart { color: #ff3366; margin-right: 6px; }
+
+.abilities-hud {
+    display: flex;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    padding: 6px 16px;
+    border-radius: 50px;
+}
+
+.ability-hud {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #1e4a5f, #0e2a38);
+    padding: 5px 14px;
+    border-radius: 40px;
+    font-size: 13px;
+    font-weight: bold;
+    border: 1px solid rgba(100,200,255,0.3);
+    transition: 0.1s;
+}
+
+.ability-hud .key { background: #000000aa; padding: 2px 6px; border-radius: 20px; color: #ffd966; }
+.ability-hud .damage { color: #ffaa66; }
+.ability-hud.cooldown-active { opacity: 0.5; filter: grayscale(0.3); }
+
+.dash-hud {
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    padding: 8px 18px;
+    border-radius: 40px;
+    border: 1px solid #88ccff;
+    color: #88ccff;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ========== МЕНЮ ========== */
+.menu-button {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    border: 2px solid #ffaa66;
+    border-radius: 50%;
+    color: #ffaa66;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.menu-button:hover { background: rgba(255, 170, 102, 0.3); transform: translateY(-50%) scale(1.05); }
+
+.fullscreen-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid #ffaa66;
+    color: #ffaa66;
+    padding: 10px 15px;
+    border-radius: 30px;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 200;
+}
+
 /* ========== МОБИЛЬНОЕ УПРАВЛЕНИЕ ========== */
 .mobile-controls {
     position: fixed;
@@ -68,48 +223,98 @@
     justify-content: center;
 }
 
-.action-btn span {
-    font-size: 10px;
-    margin-top: 2px;
+.action-btn span { font-size: 10px; margin-top: 2px; }
+.action-btn:active { transform: scale(0.95); background: rgba(255, 170, 102, 0.4); }
+
+/* ========== ОКНА ========== */
+.menu-window, .ui-window {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    background: #0a0f1a;
+    border: 3px solid #ffcc88;
+    border-radius: 20px;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
 }
 
-.action-btn:active {
-    transform: scale(0.95);
-    background: rgba(255, 170, 102, 0.4);
+.menu-window-header, .ui-window-header {
+    background: #1a2a2a;
+    padding: 12px;
+    text-align: center;
+    border-bottom: 2px solid #ffaa66;
+    border-radius: 17px 17px 0 0;
 }
 
-/* Адаптация для маленьких экранов */
-@media (max-width: 700px) {
-    .joystick-container {
-        width: 100px;
-        height: 100px;
-    }
-    .joystick-thumb {
-        width: 40px;
-        height: 40px;
-    }
-    .action-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 20px;
-    }
-    .action-btn span {
-        font-size: 9px;
-    }
+.menu-window-header h3, .ui-window-header h3 { color: #ffdd99; margin: 0; }
+.menu-window-content { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+.ui-window-content { padding: 15px; color: #e0e0e0; background: #0f1420; border-radius: 0 0 17px 17px; font-size: 12px; }
+
+.menu-btn {
+    padding: 12px;
+    border-radius: 40px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
+}
+
+.resume-btn { background: #1e4a5f; color: #88ddff; border: 1px solid #88ddff; }
+.exit-btn { background: #5a1a1a; color: #ffaa88; border: 1px solid #ff8866; }
+
+.ui-window-close {
+    background: #5a2a2a;
+    border: none;
+    color: #ffaa88;
+    font-size: 18px;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.stat-number { color: #ffaa66; font-weight: bold; font-size: 16px; }
+
+#loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0a0f1a;
+    color: #ffaa66;
+    padding: 20px;
+    border-radius: 20px;
+    z-index: 1000;
+}
+
+/* ========== АДАПТАЦИЯ ДЛЯ ТЕЛЕФОНОВ ========== */
+@media (max-width: 768px) {
+    .hud { top: 10px; left: 10px; right: 10px; gap: 8px; }
+    .health-bar { padding: 4px 12px; font-size: 14px; }
+    .ability-hud { padding: 3px 10px; font-size: 10px; gap: 4px; }
+    .ability-hud .key { font-size: 10px; padding: 1px 4px; }
+    .dash-hud { padding: 4px 12px; font-size: 11px; }
+    .menu-button { width: 40px; height: 40px; font-size: 22px; right: 15px; }
+    .fullscreen-btn { bottom: 15px; right: 15px; padding: 8px 12px; font-size: 14px; }
+    .version-info { font-size: 9px; bottom: 10px; left: 10px; }
+    
+    .joystick-container { width: 100px; height: 100px; }
+    .joystick-thumb { width: 40px; height: 40px; }
+    .action-btn { width: 60px; height: 60px; font-size: 20px; }
+    .action-btn span { font-size: 9px; }
 }
 
 @media (max-width: 500px) {
-    .joystick-container {
-        width: 80px;
-        height: 80px;
-    }
-    .joystick-thumb {
-        width: 32px;
-        height: 32px;
-    }
-    .action-btn {
-        width: 55px;
-        height: 55px;
-        font-size: 18px;
-    }
+    .joystick-container { width: 80px; height: 80px; }
+    .joystick-thumb { width: 32px; height: 32px; }
+    .action-btn { width: 55px; height: 55px; font-size: 18px; }
+    .abilities-hud { gap: 6px; padding: 4px 10px; }
 }
