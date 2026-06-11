@@ -1,4 +1,4 @@
-// ========== ИСПРАВЛЕННАЯ ВЕРСИЯ — БЕЗ МОРГАНИЯ ==========
+// ========== ИСПРАВЛЕННАЯ ВЕРСИЯ — ТАБЛИЧКА ПОД ЛАМПАМИ, ЛУЧ ДЛИННЕЕ ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -203,13 +203,10 @@ function updateLightSources() {
     }
 }
 
-// УПРОЩЁННОЕ ОСВЕЩЕНИЕ — БЕЗ МОРГАНИЯ
 function drawDynamicLighting() {
-    // Простое затемнение вместо сложных градиентов
     ctx.fillStyle = `rgba(0, 0, 0, ${ambientDarkness})`;
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
     
-    // Свет от ламп (простой круг)
     ctx.globalCompositeOperation = 'lighter';
     for(let lamp of lamps) {
         if(lamp.active) {
@@ -239,7 +236,6 @@ function drawDynamicLighting() {
     
     ctx.globalCompositeOperation = 'source-over';
     
-    // Виньетка
     if(!window.vignetteGrad) {
         window.vignetteGrad = ctx.createRadialGradient(SCREEN_W/2, SCREEN_H/2, 300, SCREEN_W/2, SCREEN_H/2, 550);
         window.vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
@@ -324,7 +320,7 @@ class BoneProjectile {
     }
 }
 
-// ========== ГАСТЕР БЛАСТЕР ==========
+// ========== ГАСТЕР БЛАСТЕР (ЛУЧ 1300 ВМЕСТО 650) ==========
 let activeGasterBlasters = [];
 
 class GasterBlaster {
@@ -375,7 +371,7 @@ class GasterBlaster {
         }
         
         if(this.frame >= 22 && this.beamAlpha > 0) {
-            const len = 650;
+            const len = 1300;  // В 2 РАЗА ДЛИННЕЕ (было 650)
             const ex = this.x + dirX * len;
             const ey = this.y + dirY * len;
             const sex = ex - camera.x;
@@ -958,8 +954,8 @@ function render() {
     drawEffects(); 
     for(let p of projectiles) p.draw(); 
     for(let g of activeGasterBlasters) g.draw(); 
-    drawLamps();
-    drawSign(); 
+    drawSign();      // ТАБЛИЧКА ПОД ЛАМПАМИ
+    drawLamps();     // ЛАМПЫ ПОВЕРХ ТАБЛИЧКИ
     drawDummy(); 
     drawSans(); 
     drawDustParticles();
