@@ -1,24 +1,20 @@
-// ========== МАКСИМАЛЬНО ОПТИМИЗИРОВАННАЯ ВЕРСИЯ С МЕНЮ ==========
+// ========== ОПТИМИЗИРОВАННАЯ ИГРА С МЕНЮ ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// ФИКСИРОВАННЫЕ РАЗМЕРЫ (НЕ МЕНЯЮТСЯ)
 const SCREEN_W = 1100;
 const SCREEN_H = 700;
 canvas.width = SCREEN_W;
 canvas.height = SCREEN_H;
 ctx.imageSmoothingEnabled = false;
 
-// РАЗМЕРЫ КАРТЫ
 const MAP_W = 3000;
 const MAP_H = 2500;
 
-// FPS ОГРАНИЧЕНИЕ
 let lastFrameTime = 0;
-const FRAME_DELAY = 1000 / 60; // 60 FPS
+const FRAME_DELAY = 1000 / 60;
 
-// КАМЕРА
 let camera = { x: 0, y: 0 };
 
 function updateCamera() {
@@ -47,7 +43,11 @@ let loadedCount = 0;
 const totalSprites = 9;
 
 function checkAllSpritesLoaded() { 
-    if(++loadedCount === totalSprites) generateTileMap();
+    if(++loadedCount === totalSprites) {
+        const loader = document.getElementById('loader');
+        if(loader) loader.remove();
+        generateTileMap();
+    }
 }
 
 sprites.sans.src = "sprites/sans.png"; sprites.sans.onload = checkAllSpritesLoaded;
@@ -60,7 +60,7 @@ sprites.lamp_off.src = "sprites/lamp_off.png"; sprites.lamp_off.onload = checkAl
 sprites.grass.src = "sprites/grass.png"; sprites.grass.onload = checkAllSpritesLoaded;
 sprites.grass_flower.src = "sprites/grass_flower.png"; sprites.grass_flower.onload = checkAllSpritesLoaded;
 
-// ========== ТАЙЛОВАЯ СИСТЕМА ==========
+// ========== ТАЙЛЫ ==========
 const TILE_SIZE = 32;
 const TILES_WIDE = Math.ceil(MAP_W / TILE_SIZE);
 const TILES_HIGH = Math.ceil(MAP_H / TILE_SIZE);
@@ -98,9 +98,8 @@ function drawTileFloor() {
     const endRow = Math.min(TILES_HIGH, Math.ceil((camera.y + SCREEN_H) / TILE_SIZE) + 1);
     
     for(let row = startRow; row < endRow; row++) {
-        const tileRow = tileMap[row];
         for(let col = startCol; col < endCol; col++) {
-            const tile = tileRow[col];
+            const tile = tileMap[row][col];
             if(!tile) continue;
             const screenX = tile.x - camera.x;
             const screenY = tile.y - camera.y;
@@ -118,7 +117,7 @@ function drawTileFloor() {
     }
 }
 
-// ========== ЛАМПЫ С КЭШЕМ ==========
+// ========== ЛАМПЫ ==========
 let lamps = [
     { x: 350, y: 280, radius: 140, color: [255,220,150], baseIntensity: 0.85, phase: 0, speed: 0.02, active: true },
     { x: 850, y: 450, radius: 130, color: [255,220,150], baseIntensity: 0.8, phase: 1.5, speed: 0.025, active: true },
@@ -166,7 +165,7 @@ function checkLampClick(wx, wy) {
     }
 }
 
-// ========== ОПТИМИЗИРОВАННЫЕ ЧАСТИЦЫ ==========
+// ========== ЧАСТИЦЫ ==========
 let dustParticles = [];
 const MAX_DUST = 40;
 
@@ -203,7 +202,7 @@ function drawDustParticles() {
     }
 }
 
-// ========== ОПТИМИЗИРОВАННОЕ ОСВЕЩЕНИЕ ==========
+// ========== ОСВЕЩЕНИЕ ==========
 let lightSources = [];
 let ambientDarkness = 0.3;
 let lightingCounter = 0;
@@ -843,7 +842,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// ========== МЕНЮ (СПРАВА ПО ЦЕНТРУ) ==========
+// ========== МЕНЮ ==========
 const menuButton = document.getElementById('menuButton');
 const menuWindow = document.getElementById('menuWindow');
 const resumeBtn = document.getElementById('resumeGameBtn');
@@ -859,15 +858,7 @@ function openMenu() {
     menuWindow.style.display = 'flex';
     const overlay = document.createElement('div');
     overlay.id = 'menuOverlay';
-    overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.5);
-        z-index: 999;
-    `;
+    overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;`;
     document.body.appendChild(overlay);
 }
 
@@ -960,7 +951,7 @@ updateCamera();
 updateHealthUI();
 updateDashUI();
 
-// ========== ГЛАВНЫЙ ЦИКЛ С FPS ОГРАНИЧЕНИЕМ И ПАУЗОЙ ==========
+// ========== ГЛАВНЫЙ ЦИКЛ ==========
 function gameUpdate() { 
     updateMovement(); 
     updateProjectiles(); 
