@@ -1,4 +1,4 @@
-// ========== ИГРА С ТРОПИНКАМИ (ВРУЧНУЮ) ==========
+// ========== GitTale v0.0.2 ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -33,11 +33,13 @@ const sprites = {
     bone: new Image(), sign: new Image(), 
     lamp_on: new Image(), lamp_off: new Image(),
     grass: new Image(), grass_flower: new Image(),
-    dirt: new Image()
+    dirt: new Image(),
+    fir: new Image(),    // НИЖНЯЯ ЧАСТЬ ДЕРЕВА
+    fir2: new Image()    // ВЕРХНЯЯ ЧАСТЬ ДЕРЕВА
 };
 
 let loadedCount = 0;
-const totalSprites = 10;
+const totalSprites = 12;
 
 function checkAllSpritesLoaded() { 
     if(++loadedCount === totalSprites) {
@@ -45,6 +47,7 @@ function checkAllSpritesLoaded() {
         if(loader) loader.remove();
         generateTileMap();
         generatePaths();
+        generateTrees();
     }
 }
 
@@ -58,6 +61,82 @@ sprites.lamp_off.src = "sprites/lamp_off.png"; sprites.lamp_off.onload = checkAl
 sprites.grass.src = "sprites/grass.png"; sprites.grass.onload = checkAllSpritesLoaded;
 sprites.grass_flower.src = "sprites/grass_flower.png"; sprites.grass_flower.onload = checkAllSpritesLoaded;
 sprites.dirt.src = "sprites/dirt.png"; sprites.dirt.onload = checkAllSpritesLoaded;
+sprites.fir.src = "sprites/fir.png"; sprites.fir.onload = checkAllSpritesLoaded;
+sprites.fir2.src = "sprites/fir2.png"; sprites.fir2.onload = checkAllSpritesLoaded;
+
+// ========== ДЕРЕВЬЯ ==========
+let trees = [];
+
+function generateTrees() {
+    trees = [];
+    
+    // Функция проверки, не пересекается ли дерево с тропинкой
+    function isTooCloseToPath(x, y, margin = 40) {
+        for(let tile of pathTiles) {
+            if(Math.abs(x - tile.x) < margin && Math.abs(y - tile.y) < margin) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // Функция проверки, не слишком ли близко к другим деревьям
+    function isTooCloseToOtherTrees(x, y, margin = 80) {
+        for(let tree of trees) {
+            if(Math.abs(x - tree.x) < margin && Math.abs(y - tree.y) < margin) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // Создаём деревья в случайных местах
+    const treeCount = 80;
+    
+    for(let i = 0; i < treeCount; i++) {
+        let attempts = 0;
+        let placed = false;
+        
+        while(!placed && attempts < 50) {
+            // Случайные координаты на карте (с отступом от краёв)
+            const x = 80 + Math.random() * (MAP_W - 160);
+            const y = 80 + Math.random() * (MAP_H - 160);
+            
+            // Проверяем, не рядом ли с тропинкой и не рядом ли с другими деревьями
+            if(!isTooCloseToPath(x, y, 50) && !isTooCloseToOtherTrees(x, y, 70)) {
+                // Дополнительная проверка: не слишком близко к манекену и табличке
+                const distToDummy = Math.hypot(x - dummyObj.x, y - dummyObj.y);
+                const distToSign = Math.hypot(x - sign.x, y - sign.y);
+                const distToSpawn = Math.hypot(x - MAP_W/2, y - MAP_H/2);
+                
+                if(distToDummy > 100 && distToSign > 100 && distToSpawn > 100) {
+                    trees.push({ x, y });
+                    placed = true;
+                }
+            }
+            attempts++;
+        }
+    }
+}
+
+function drawTrees() {
+    for(let tree of trees) {
+        const sx = tree.x - camera.x;
+        const sy = tree.y - camera.y;
+        
+        if(sx + 64 < 0 || sx > SCREEN_W || sy + 128 < 0 || sy > SCREEN_H) continue;
+        
+        // Рисуем нижнюю часть дерева (ствол/основание)
+        if(sprites.fir && sprites.fir.complete) {
+            ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
+        }
+        
+        // Рисуем верхнюю часть дерева (крона)
+        if(sprites.fir2 && sprites.fir2.complete) {
+            ctx.drawImage(sprites.fir2, sx - 24, sy - 96, 80, 96);
+        }
+    }
+}
 
 // ========== ТРОПИНКИ (ВРУЧНУЮ) ==========
 let pathTiles = [];
@@ -684,13 +763,14 @@ for(let row = 0; row < TILES_HIGH; row++) {
     }
 }
 generatePaths();
+generateTrees();
 updateCamera();
 updateHealthUI();
 updateDashUI();
 
 // ========== ГЛАВНЫЙ ЦИКЛ ==========
 function gameUpdate() { updateMovement(); updateProjectiles(); handleCollisions(); updateGasterBlasters(); updateCooldowns(); updateEffects(); updateDustParticles(); updateLighting(); updateLampGradients(); }
-function render() { drawTileFloor(); drawEffects(); for(let p of projectiles) p.draw(); for(let g of activeGasterBlasters) g.draw(); drawSign(); drawLamps(); drawDummy(); drawSans(); drawDustParticles(); drawDirectionLine(); drawCursorMarker(); drawDynamicLighting(); }
+function render() { drawTileFloor(); drawEffects(); for(let p of projectiles) p.draw(); for(let g of activeGasterBlasters) g.draw(); drawTrees(); drawSign(); drawLamps(); drawDummy(); drawSans(); drawDustParticles(); drawDirectionLine(); drawCursorMarker(); drawDynamicLighting(); }
 function loop(currentTime) { requestAnimationFrame(loop); if(currentTime - lastFrameTime < FRAME_DELAY) return; lastFrameTime = currentTime; if(!gamePaused) gameUpdate(); render(); }
 
 resetGame();
