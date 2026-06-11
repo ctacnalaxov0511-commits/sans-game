@@ -1,4 +1,6 @@
-// ========== GitTale v0.0.4 ==========
+// ========== GitTale v0.0.5 ==========
+// Полная версия с поддержкой ПК и мобильных устройств
+// На телефоне: только канвас + джойстик + 3 кнопки, Санс смотрит в сторону движения
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -684,7 +686,6 @@ if (isMobile) {
     if (mobileControls) mobileControls.classList.add('visible');
     window.disableKeyboard = true;
     
-    // Джойстик
     const joystickBase = document.getElementById('joystickBase');
     const joystickThumb = document.getElementById('joystickThumb');
     const maxDist = 35;
@@ -717,6 +718,14 @@ if (isMobile) {
         move.right = joystickVector.x > 0.2;
         move.up = joystickVector.y < -0.2;
         move.down = joystickVector.y > 0.2;
+        
+        // ПОВОРОТ САНСА В СТОРОНУ ДВИЖЕНИЯ
+        if (move.left || move.right || move.up || move.down) {
+            let angle = Math.atan2(joystickVector.y, joystickVector.x);
+            if (Math.abs(joystickVector.x) > 0.2 || Math.abs(joystickVector.y) > 0.2) {
+                player.angle = angle;
+            }
+        }
     }
     
     function resetJoystick() {
@@ -748,7 +757,6 @@ if (isMobile) {
         resetJoystick();
     });
     
-    // Кнопки атак
     const skillBtns = document.querySelectorAll('.skill-btn');
     skillBtns.forEach(btn => {
         btn.addEventListener('touchstart', (e) => {
@@ -762,7 +770,6 @@ if (isMobile) {
         });
     });
     
-    // Рывок по двойному тапу
     let lastTap = 0;
     joystickBase.addEventListener('touchstart', (e) => {
         const now = Date.now();
