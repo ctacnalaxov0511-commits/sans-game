@@ -1,4 +1,4 @@
-// ========== ОПТИМИЗИРОВАННАЯ ИГРА С МЕНЮ ==========
+// ========== ИСПРАВЛЕННАЯ ВЕРСИЯ — БЕЗ МОРГАНИЯ ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -132,24 +132,9 @@ let lamps = [
 ];
 
 let lampTime = 0;
-let lampGradientCache = [];
 
 function updateLampGradients() {
     lampTime += 0.016;
-    for(let i = 0; i < lamps.length; i++) {
-        const lamp = lamps[i];
-        if(!lamp.active) {
-            lampGradientCache[i] = null;
-            continue;
-        }
-        const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
-        const intensity = lamp.baseIntensity * flicker;
-        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, lamp.radius);
-        grad.addColorStop(0, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity})`);
-        grad.addColorStop(0.4, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity * 0.45})`);
-        grad.addColorStop(1, 'rgba(0,0,0,0)');
-        lampGradientCache[i] = grad;
-    }
 }
 
 function checkLampClick(wx, wy) {
@@ -204,8 +189,7 @@ function drawDustParticles() {
 
 // ========== ОСВЕЩЕНИЕ ==========
 let lightSources = [];
-let ambientDarkness = 0.3;
-let lightingCounter = 0;
+let ambientDarkness = 0.25;
 
 function addLightSource(x, y, radius, color = [255,200,100], intensity = 0.7) {
     lightSources.push({ x, y, radius, color, intensity, life: 22 });
@@ -219,25 +203,26 @@ function updateLightSources() {
     }
 }
 
+// УПРОЩЁННОЕ ОСВЕЩЕНИЕ — БЕЗ МОРГАНИЯ
 function drawDynamicLighting() {
-    lightingCounter++;
-    if(lightingCounter % 2 !== 0) return;
-    
-    ctx.fillStyle = `rgba(0,0,0,${ambientDarkness})`;
+    // Простое затемнение вместо сложных градиентов
+    ctx.fillStyle = `rgba(0, 0, 0, ${ambientDarkness})`;
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    ctx.globalCompositeOperation = 'lighter';
     
-    for(let i = 0; i < lamps.length; i++) {
-        const lamp = lamps[i];
-        const grad = lampGradientCache[i];
-        if(lamp.active && grad) {
+    // Свет от ламп (простой круг)
+    ctx.globalCompositeOperation = 'lighter';
+    for(let lamp of lamps) {
+        if(lamp.active) {
             const sx = lamp.x - camera.x;
             const sy = lamp.y - 15 - camera.y;
-            ctx.save();
-            ctx.translate(sx, sy);
-            ctx.fillStyle = grad;
-            ctx.fillRect(-sx, -sy, SCREEN_W, SCREEN_H);
-            ctx.restore();
+            const radGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, lamp.radius);
+            const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
+            const intensity = lamp.baseIntensity * flicker;
+            radGrad.addColorStop(0, `rgba(255, 220, 150, ${intensity * 0.8})`);
+            radGrad.addColorStop(0.5, `rgba(255, 200, 100, ${intensity * 0.3})`);
+            radGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = radGrad;
+            ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
         }
     }
     
@@ -245,8 +230,8 @@ function drawDynamicLighting() {
         const sx = src.x - camera.x;
         const sy = src.y - camera.y;
         const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, src.radius);
-        grad.addColorStop(0, `rgba(${src.color[0]},${src.color[1]},${src.color[2]}, ${src.intensity * 0.8})`);
-        grad.addColorStop(0.5, `rgba(${src.color[0]},${src.color[1]},${src.color[2]}, ${src.intensity * 0.3})`);
+        grad.addColorStop(0, `rgba(${src.color[0]},${src.color[1]},${src.color[2]}, ${src.intensity * 0.7})`);
+        grad.addColorStop(0.7, `rgba(${src.color[0]},${src.color[1]},${src.color[2]}, ${src.intensity * 0.2})`);
         grad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
@@ -254,11 +239,12 @@ function drawDynamicLighting() {
     
     ctx.globalCompositeOperation = 'source-over';
     
+    // Виньетка
     if(!window.vignetteGrad) {
         window.vignetteGrad = ctx.createRadialGradient(SCREEN_W/2, SCREEN_H/2, 300, SCREEN_W/2, SCREEN_H/2, 550);
         window.vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
         window.vignetteGrad.addColorStop(0.7, 'rgba(0,0,0,0.1)');
-        window.vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.4)');
+        window.vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
     }
     ctx.fillStyle = window.vignetteGrad;
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
@@ -299,9 +285,12 @@ let windowOpen = false;
 let stats = { hits: 0, totalDamage: 0, gasterCount: 0 };
 
 function updateStatsUI() {
-    document.getElementById('statHits').innerText = stats.hits;
-    document.getElementById('statDamage').innerText = stats.totalDamage;
-    document.getElementById('statGaster').innerText = stats.gasterCount;
+    const hitsEl = document.getElementById('statHits');
+    const damageEl = document.getElementById('statDamage');
+    const gasterEl = document.getElementById('statGaster');
+    if(hitsEl) hitsEl.innerText = stats.hits;
+    if(damageEl) damageEl.innerText = stats.totalDamage;
+    if(gasterEl) gasterEl.innerText = stats.gasterCount;
 }
 function isPlayerNearSign() { 
     const dx = player.x - sign.x, dy = player.y - sign.y;
