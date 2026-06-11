@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SANS | UNDERTALE RPG</title>
+    <title>GitTale | UNDERTALE RPG</title>
     <link rel="icon" type="image/png" href="sprites/icon.png">
     <link rel="shortcut icon" href="sprites/icon.png">
     <link rel="stylesheet" href="style.css">
@@ -11,10 +11,11 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <!-- КНОПКА МЕНЮ -->
+    <!-- ВЕРСИЯ ИГРЫ (ЛЕВЫЙ НИЖНИЙ УГОЛ) -->
+    <div class="version-info">GitTale v0.0.1</div>
+    
     <button id="menuButton" class="menu-button">☰</button>
     
-    <!-- ОКНО МЕНЮ -->
     <div id="menuWindow" class="menu-window">
         <div class="menu-window-header"><h3>📋 МЕНЮ</h3></div>
         <div class="menu-window-content">
@@ -23,7 +24,6 @@
         </div>
     </div>
     
-    <!-- HUD -->
     <div class="hud">
         <div class="health-bar"><span class="heart">❤️</span><span id="hpValue">24</span><span>/24</span></div>
         <div class="abilities-hud">
@@ -39,7 +39,7 @@
     <div id="infoWindow" class="ui-window">
         <div class="ui-window-header"><h3>📜 СТАТИСТИКА</h3><button class="ui-window-close" id="closeWindowBtn">✕</button></div>
         <div class="ui-window-content">
-            <p>⚔️ <strong>СПОСОБНОСТИ</strong></p>
+            <p>⚔️ <strong>GitTale</strong></p>
             <p>❶ КОСТЬ — урон 10</p>
             <p>❷ ГАСТЕР — урон 50</p>
             <p>❸ ЗАЛП — 3x10 урона</p>
@@ -49,6 +49,7 @@
             <p>Гастеров: <span id="statGaster" class="stat-number">0</span></p>
             <hr><p>💡 Клик по лампе — вкл/выкл</p>
             <p>📌 Нажми E у таблички</p>
+            <p>🎮 GitTale v0.0.1</p>
         </div>
     </div>
     
