@@ -11,8 +11,22 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <!-- ВЕРСИЯ ИГРЫ (ЛЕВЫЙ НИЖНИЙ УГОЛ) -->
-    <div class="version-info">GitTale v0.0.3</div>
+    <!-- ВЕРСИЯ ИГРЫ -->
+    <div class="version-info">GitTale v0.0.4</div>
+    
+    <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ (СКРЫТО ПО УМОЛЧАНИЮ) -->
+    <div id="mobileControls" class="mobile-controls">
+        <div class="joystick-container">
+            <div class="joystick-base" id="joystickBase">
+                <div class="joystick-thumb" id="joystickThumb"></div>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button class="action-btn skill-btn" data-skill="1">1<br><span>КОСТЬ</span></button>
+            <button class="action-btn skill-btn" data-skill="2">2<br><span>ГАСТЕР</span></button>
+            <button class="action-btn skill-btn" data-skill="3">3<br><span>ЗАЛП</span></button>
+        </div>
+    </div>
     
     <button id="menuButton" class="menu-button">☰</button>
     
@@ -49,7 +63,7 @@
             <p>Гастеров: <span id="statGaster" class="stat-number">0</span></p>
             <hr><p>💡 Клик по лампе — вкл/выкл</p>
             <p>📌 Нажми E у таблички</p>
-            <p>🎮 GitTale v0.0.3</p>
+            <p>🎮 GitTale v0.0.4</p>
         </div>
     </div>
     
