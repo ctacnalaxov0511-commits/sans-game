@@ -1,4 +1,4 @@
-// ========== ИСПРАВЛЕННАЯ ВЕРСИЯ — ТАБЛИЧКА ПОД ЛАМПАМИ, ЛУЧ ДЛИННЕЕ ==========
+// ========== ИСПРАВЛЕННАЯ ВЕРСИЯ — БОЛЬШЕ СВЕТА, НЕТ СВЕЧЕНИЯ МАНЕКЕНА, УПРАВЛЕНИЕ ЦФЫВ ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -117,18 +117,18 @@ function drawTileFloor() {
     }
 }
 
-// ========== ЛАМПЫ ==========
+// ========== ЛАМПЫ (РАДИУС УВЕЛИЧЕН) ==========
 let lamps = [
-    { x: 350, y: 280, radius: 140, color: [255,220,150], baseIntensity: 0.85, phase: 0, speed: 0.02, active: true },
-    { x: 850, y: 450, radius: 130, color: [255,220,150], baseIntensity: 0.8, phase: 1.5, speed: 0.025, active: true },
-    { x: 1400, y: 600, radius: 140, color: [255,220,150], baseIntensity: 0.85, phase: 3, speed: 0.018, active: true },
-    { x: 2100, y: 350, radius: 130, color: [255,200,120], baseIntensity: 0.75, phase: 2, speed: 0.022, active: true },
-    { x: 2600, y: 800, radius: 130, color: [255,200,120], baseIntensity: 0.75, phase: 4, speed: 0.02, active: true },
-    { x: 1800, y: 1800, radius: 120, color: [255,220,150], baseIntensity: 0.8, phase: 0.5, speed: 0.028, active: true },
-    { x: 900, y: 2000, radius: 140, color: [255,220,150], baseIntensity: 0.85, phase: 1, speed: 0.022, active: true },
-    { x: 500, y: 1500, radius: 130, color: [255,200,120], baseIntensity: 0.75, phase: 2.5, speed: 0.02, active: true },
-    { x: 2200, y: 1400, radius: 130, color: [255,220,150], baseIntensity: 0.8, phase: 3.5, speed: 0.025, active: true },
-    { x: 2700, y: 2100, radius: 140, color: [255,220,150], baseIntensity: 0.85, phase: 4.5, speed: 0.018, active: true },
+    { x: 350, y: 280, radius: 180, color: [255,220,150], baseIntensity: 0.85, phase: 0, speed: 0.02, active: true },
+    { x: 850, y: 450, radius: 170, color: [255,220,150], baseIntensity: 0.8, phase: 1.5, speed: 0.025, active: true },
+    { x: 1400, y: 600, radius: 180, color: [255,220,150], baseIntensity: 0.85, phase: 3, speed: 0.018, active: true },
+    { x: 2100, y: 350, radius: 170, color: [255,200,120], baseIntensity: 0.75, phase: 2, speed: 0.022, active: true },
+    { x: 2600, y: 800, radius: 170, color: [255,200,120], baseIntensity: 0.75, phase: 4, speed: 0.02, active: true },
+    { x: 1800, y: 1800, radius: 160, color: [255,220,150], baseIntensity: 0.8, phase: 0.5, speed: 0.028, active: true },
+    { x: 900, y: 2000, radius: 180, color: [255,220,150], baseIntensity: 0.85, phase: 1, speed: 0.022, active: true },
+    { x: 500, y: 1500, radius: 170, color: [255,200,120], baseIntensity: 0.75, phase: 2.5, speed: 0.02, active: true },
+    { x: 2200, y: 1400, radius: 170, color: [255,220,150], baseIntensity: 0.8, phase: 3.5, speed: 0.025, active: true },
+    { x: 2700, y: 2100, radius: 180, color: [255,220,150], baseIntensity: 0.85, phase: 4.5, speed: 0.018, active: true },
 ];
 
 let lampTime = 0;
@@ -320,7 +320,7 @@ class BoneProjectile {
     }
 }
 
-// ========== ГАСТЕР БЛАСТЕР (ЛУЧ 1300 ВМЕСТО 650) ==========
+// ========== ГАСТЕР БЛАСТЕР ==========
 let activeGasterBlasters = [];
 
 class GasterBlaster {
@@ -371,7 +371,7 @@ class GasterBlaster {
         }
         
         if(this.frame >= 22 && this.beamAlpha > 0) {
-            const len = 1300;  // В 2 РАЗА ДЛИННЕЕ (было 650)
+            const len = 1300;
             const ex = this.x + dirX * len;
             const ey = this.y + dirY * len;
             const sex = ex - camera.x;
@@ -874,13 +874,20 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// ========== УПРАВЛЕНИЕ ==========
+// ========== УПРАВЛЕНИЕ (WASD + ЦФЫВ) ==========
 window.addEventListener('keydown', (e) => {
     const k = e.key;
+    // WASD (английская раскладка)
     if(k === 'w' || k === 'W') move.up = true;
     if(k === 's' || k === 'S') move.down = true;
     if(k === 'a' || k === 'A') move.left = true;
     if(k === 'd' || k === 'D') move.right = true;
+    // ЦФЫВ (русская раскладка)
+    if(k === 'ц' || k === 'Ц') move.up = true;
+    if(k === 'ы' || k === 'Ы') move.down = true;
+    if(k === 'ф' || k === 'Ф') move.left = true;
+    if(k === 'в' || k === 'В') move.right = true;
+    
     if(k === ' ') { e.preventDefault(); dashAction(); }
     if(k === '1') { e.preventDefault(); castBoneShot(); }
     if(k === '2') { e.preventDefault(); castGasterBlaster(); }
@@ -889,10 +896,16 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('keyup', (e) => {
     const k = e.key;
+    // WASD
     if(k === 'w' || k === 'W') move.up = false;
     if(k === 's' || k === 'S') move.down = false;
     if(k === 'a' || k === 'A') move.left = false;
     if(k === 'd' || k === 'D') move.right = false;
+    // ЦФЫВ
+    if(k === 'ц' || k === 'Ц') move.up = false;
+    if(k === 'ы' || k === 'Ы') move.down = false;
+    if(k === 'ф' || k === 'Ф') move.left = false;
+    if(k === 'в' || k === 'В') move.right = false;
 });
 canvas.addEventListener('click', () => canvas.focus());
 canvas.focus();
@@ -954,8 +967,8 @@ function render() {
     drawEffects(); 
     for(let p of projectiles) p.draw(); 
     for(let g of activeGasterBlasters) g.draw(); 
-    drawSign();      // ТАБЛИЧКА ПОД ЛАМПАМИ
-    drawLamps();     // ЛАМПЫ ПОВЕРХ ТАБЛИЧКИ
+    drawSign();      // Табличка под лампами
+    drawLamps();     // Лампы поверх таблички
     drawDummy(); 
     drawSans(); 
     drawDustParticles();
