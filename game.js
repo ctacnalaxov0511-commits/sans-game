@@ -1,20 +1,18 @@
-// ========== ПОЛНОЭКРАННАЯ ИГРА С HUD И СВЕТОВЫМ ЛАЗЕРОМ ==========
+// ========== ОПТИМИЗИРОВАННАЯ ВЕРСИЯ ==========
+// (без console.log, с кэшем градиентов и проверкой видимости)
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// ========== РАЗМЕРЫ ЭКРАНА (ВНУТРЕННЕЕ РАЗРЕШЕНИЕ) ==========
 const SCREEN_W = 1100;
 const SCREEN_H = 700;
 canvas.width = SCREEN_W;
 canvas.height = SCREEN_H;
 ctx.imageSmoothingEnabled = false;
 
-// ========== РАЗМЕРЫ КАРТЫ ==========
 const MAP_W = 3000;
 const MAP_H = 2500;
 
-// ========== КАМЕРА ==========
 let camera = { x: 0, y: 0, width: SCREEN_W, height: SCREEN_H };
 
 function updateCamera() {
@@ -46,7 +44,6 @@ const totalSprites = 9;
 
 function checkAllSpritesLoaded() { 
     if(++loadedCount === totalSprites) {
-        console.log("Все спрайты загружены!");
         generateTileMap();
     }
 }
@@ -117,7 +114,7 @@ function drawTileFloor() {
     }
 }
 
-// ========== ЛАМПЫ ==========
+// ========== ЛАМПЫ С КЭШЕМ ГРАДИЕНТОВ ==========
 let lamps = [
     { x: 350, y: 280, radius: 140, color: [255,220,150], baseIntensity: 0.85, phase: 0, speed: 0.02, active: true },
     { x: 850, y: 450, radius: 130, color: [255,220,150], baseIntensity: 0.8, phase: 1.5, speed: 0.025, active: true },
@@ -132,8 +129,21 @@ let lamps = [
 ];
 
 let lampTime = 0;
+let lampGradientCache = [];
 
-function updateLampGradients() { lampTime += 0.016; }
+function updateLampGradients() {
+    lampTime += 0.016;
+    lampGradientCache = lamps.map(lamp => {
+        if (!lamp.active) return null;
+        const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
+        const intensity = lamp.baseIntensity * flicker;
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, lamp.radius);
+        grad.addColorStop(0, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity})`);
+        grad.addColorStop(0.4, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity * 0.45})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        return grad;
+    });
+}
 
 function checkLampClick(worldX, worldY) {
     for(let i = 0; i < lamps.length; i++) {
@@ -152,6 +162,7 @@ function checkLampClick(worldX, worldY) {
 let dustParticles = [];
 
 function addDustParticle(x, y) {
+    if(dustParticles.length > 60) dustParticles.shift();
     dustParticles.push({
         x: x + (Math.random() - 0.5) * 15,
         y: y + 15,
@@ -174,8 +185,8 @@ function updateDustParticles() {
 
 function drawDustParticles() {
     for(let p of dustParticles) {
-        const screenPos = worldToScreen(p.x, p.y);
         if(!isOnScreen(p.x, p.y)) continue;
+        const screenPos = worldToScreen(p.x, p.y);
         ctx.beginPath();
         ctx.arc(screenPos.x, screenPos.y, p.size * (p.life/20), 0, Math.PI*2);
         ctx.fillStyle = `rgba(120, 100, 70, ${p.alpha * (p.life/20)})`;
@@ -206,16 +217,14 @@ function drawDynamicLighting() {
     
     for(let i = 0; i < lamps.length; i++) {
         const lamp = lamps[i];
-        if(lamp.active) {
+        const grad = lampGradientCache[i];
+        if(lamp.active && grad) {
             const screenPos = worldToScreen(lamp.x, lamp.y - 15);
-            const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
-            const intensity = lamp.baseIntensity * flicker;
-            const grad = ctx.createRadialGradient(screenPos.x, screenPos.y, 0, screenPos.x, screenPos.y, lamp.radius);
-            grad.addColorStop(0, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity})`);
-            grad.addColorStop(0.4, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity * 0.45})`);
-            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.save();
+            ctx.translate(screenPos.x, screenPos.y);
             ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+            ctx.fillRect(-screenPos.x, -screenPos.y, SCREEN_W, SCREEN_H);
+            ctx.restore();
         }
     }
     
@@ -249,14 +258,12 @@ let player = {
 let move = { up: false, down: false, left: false, right: false };
 let baseSpeed = 5.2;
 
-// ========== РЫВОК (ИСПРАВЛЕННЫЙ) ==========
 let dash = { 
     active: false, duration: 0, cooldown: 0, speedBoost: 16.5, 
     trailPositions: [], afterImages: [],
     canDash: true
 };
 
-// ========== МАНЕКЕН ==========
 const dummyObj = { x: MAP_W - 350, y: MAP_H/2, radius: 35 };
 function isHitDummy(x, y, rad) { 
     const dx = x - dummyObj.x, dy = y - dummyObj.y;
@@ -272,7 +279,6 @@ function doesLaserHitDummy(startX, startY, angle, length) {
     return Math.hypot(dummyObj.x - closestX, dummyObj.y - closestY) < dummyObj.radius + 15;
 }
 
-// ========== ТАБЛИЧКА ==========
 const sign = { x: 350, y: 250 };
 let windowOpen = false;
 let stats = { hits: 0, totalDamage: 0, gasterCount: 0 };
@@ -302,8 +308,8 @@ class BoneProjectile {
         if(this.x < -200 || this.x > MAP_W+200 || this.y < -200 || this.y > MAP_H+200) this.life = false;
     }
     draw() {
-        const screenPos = worldToScreen(this.x, this.y);
         if(!isOnScreen(this.x, this.y)) return;
+        const screenPos = worldToScreen(this.x, this.y);
         ctx.save();
         ctx.translate(screenPos.x, screenPos.y);
         ctx.rotate(this.angle);
@@ -313,7 +319,7 @@ class BoneProjectile {
     }
 }
 
-// ========== ГАСТЕР БЛАСТЕР (СВЕТОВОЙ ЛАЗЕР) ==========
+// ========== ГАСТЕР БЛАСТЕР ==========
 let activeGasterBlasters = [];
 
 class GasterBlaster {
@@ -321,12 +327,10 @@ class GasterBlaster {
         this.x = x; this.y = y;
         this.angleToTarget = Math.atan2(targetY - y, targetX - x);
         this.frame = 0; this.maxFrames = 55;
-        this.beamAlpha = 0; 
-        this.hasDamaged = false;
+        this.beamAlpha = 0; this.hasDamaged = false;
         this.size = 0;
         addLightSource(x, y, 160, [255,100,60], 0.85);
     }
-    
     update() {
         this.frame++;
         if(this.frame < 22) {
@@ -349,11 +353,9 @@ class GasterBlaster {
         }
         return true;
     }
-    
     draw() {
-        const screenPos = worldToScreen(this.x, this.y);
         if(!isOnScreen(this.x, this.y) && this.beamAlpha === 0) return;
-        
+        const screenPos = worldToScreen(this.x, this.y);
         const dirX = Math.cos(this.angleToTarget), dirY = Math.sin(this.angleToTarget);
         const currentSize = 70 * (0.7 + this.size * 0.3);
         
@@ -366,14 +368,12 @@ class GasterBlaster {
             ctx.save();
         }
         
-        // ========== СВЕТОВОЙ ЛАЗЕР ==========
         if(this.frame >= 22 && this.beamAlpha > 0) {
             const beamLength = 650;
             const endX = this.x + dirX * beamLength;
             const endY = this.y + dirY * beamLength;
             const screenEnd = worldToScreen(endX, endY);
             
-            // Внешнее свечение
             ctx.beginPath();
             ctx.moveTo(screenPos.x, screenPos.y);
             ctx.lineTo(screenEnd.x, screenEnd.y);
@@ -381,12 +381,10 @@ class GasterBlaster {
             ctx.strokeStyle = `rgba(255, 220, 100, ${this.beamAlpha * 0.35})`;
             ctx.stroke();
             
-            // Основной луч (жёлто-белый)
             ctx.beginPath();
             ctx.moveTo(screenPos.x, screenPos.y);
             ctx.lineTo(screenEnd.x, screenEnd.y);
             ctx.lineWidth = 18;
-            
             const gradient = ctx.createLinearGradient(screenPos.x, screenPos.y, screenEnd.x, screenEnd.y);
             gradient.addColorStop(0, `rgba(255, 240, 150, ${this.beamAlpha})`);
             gradient.addColorStop(0.5, `rgba(255, 220, 80, ${this.beamAlpha * 0.9})`);
@@ -394,7 +392,6 @@ class GasterBlaster {
             ctx.strokeStyle = gradient;
             ctx.stroke();
             
-            // Яркая сердцевина
             ctx.beginPath();
             ctx.moveTo(screenPos.x, screenPos.y);
             ctx.lineTo(screenEnd.x, screenEnd.y);
@@ -402,23 +399,20 @@ class GasterBlaster {
             ctx.strokeStyle = `rgba(255, 255, 200, ${this.beamAlpha})`;
             ctx.stroke();
             
-            // Вспышка в дуле бластера
             ctx.beginPath();
             ctx.arc(screenPos.x, screenPos.y, 16, 0, Math.PI*2);
             ctx.fillStyle = `rgba(255, 220, 100, ${this.beamAlpha * 0.8})`;
             ctx.fill();
-            
             ctx.beginPath();
             ctx.arc(screenPos.x, screenPos.y, 8, 0, Math.PI*2);
             ctx.fillStyle = `rgba(255, 255, 200, ${this.beamAlpha})`;
             ctx.fill();
         }
-        
         ctx.restore();
     }
 }
 
-// ========== ЭФФЕКТЫ ==========
+// ========== ЭФФЕКТЫ С ПРОВЕРКОЙ ВИДИМОСТИ ==========
 let effects = [];
 
 function showDamageNumber(damage, x, y) {
@@ -436,10 +430,8 @@ function addDashSparks(x, y) {
     }
 }
 
-// ========== КУЛДАУНЫ ==========
 let cooldowns = { skill1: 0, skill2: 0, skill3: 0 };
 
-// ========== КУРСОР ==========
 let cursorWorld = { x: player.x, y: player.y };
 let mouseInCanvas = false;
 
@@ -528,7 +520,6 @@ function castBoneVolley() {
     updateCooldownUI();
 }
 
-// ========== КОЛЛИЗИИ ==========
 function handleCollisions() {
     for(let i = projectiles.length-1; i >= 0; i--) {
         const p = projectiles[i];
@@ -542,7 +533,6 @@ function handleCollisions() {
     }
 }
 
-// ========== ДВИЖЕНИЕ ==========
 function updateMovement() {
     let curSpeed = baseSpeed;
     let isMoving = false;
@@ -641,7 +631,6 @@ function updateEffects() {
     }
 }
 
-// ========== UI ФУНКЦИИ ==========
 function updateDashUI() { 
     const dashEl = document.getElementById('dashReady');
     if(dashEl) {
@@ -678,7 +667,6 @@ function resetGame() {
     updateCamera();
 }
 
-// ========== ТЕНЬ ==========
 function drawShadowTopDown(worldX, worldY, radius, alpha = 0.35) {
     const screenPos = worldToScreen(worldX, worldY);
     ctx.beginPath();
@@ -687,7 +675,6 @@ function drawShadowTopDown(worldX, worldY, radius, alpha = 0.35) {
     ctx.fill();
 }
 
-// ========== ОТРИСОВКА ==========
 function drawLamps() {
     for(let lamp of lamps) {
         if(!isOnScreen(lamp.x, lamp.y, 100)) continue;
@@ -768,6 +755,7 @@ function drawEffects() {
     for(let e of effects) {
         let drawX = e.x, drawY = e.y;
         if(e.isWorld !== false) {
+            if(!isOnScreen(e.x, e.y, 150)) continue;
             const screenPos = worldToScreen(e.x, e.y);
             drawX = screenPos.x; drawY = screenPos.y;
         }
@@ -810,7 +798,6 @@ function drawDirectionLine() {
 
 function updateLighting() { updateLightSources(); }
 
-// ========== ОКНО ==========
 const infoWindow = document.getElementById('infoWindow');
 const closeBtn = document.getElementById('closeWindowBtn');
 function openInfoWindow() { if(!windowOpen) { updateStatsUI(); infoWindow.style.display = 'flex'; windowOpen = true; } }
@@ -824,7 +811,6 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// ========== УПРАВЛЕНИЕ ==========
 window.addEventListener('keydown', (e) => {
     const k = e.key;
     if(k === 'w' || k === 'W') move.up = true;
@@ -847,7 +833,6 @@ window.addEventListener('keyup', (e) => {
 canvas.addEventListener('click', () => canvas.focus());
 canvas.focus();
 
-// ========== ПОЛНОЭКРАННЫЙ РЕЖИМ ==========
 function resizeCanvas() {
     const gameAspect = SCREEN_W / SCREEN_H;
     let newWidth = window.innerWidth;
@@ -879,7 +864,6 @@ if(fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullscreen);
 
 setTimeout(resizeCanvas, 100);
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
 tileMap = [];
 for(let row = 0; row < TILES_HIGH; row++) {
     tileMap[row] = [];
@@ -891,7 +875,6 @@ updateCamera();
 updateHealthUI();
 updateDashUI();
 
-// ========== ГЛАВНЫЙ ЦИКЛ ==========
 function gameUpdate() { 
     updateMovement(); 
     updateProjectiles(); 
