@@ -1,4 +1,4 @@
-// ========== ИГРА С ТРОПИНКАМИ (dirt.png) ==========
+// ========== ИГРА С ТРОПИНКАМИ И ТРЯСКОЙ МАНЕКЕНА ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -37,7 +37,7 @@ const sprites = {
     bone: new Image(), sign: new Image(), 
     lamp_on: new Image(), lamp_off: new Image(),
     grass: new Image(), grass_flower: new Image(),
-    dirt: new Image()  // НОВЫЙ СПРАЙТ ТРОПИНКИ
+    dirt: new Image()
 };
 
 let loadedCount = 0;
@@ -48,6 +48,7 @@ function checkAllSpritesLoaded() {
         const loader = document.getElementById('loader');
         if(loader) loader.remove();
         generateTileMap();
+        generatePaths();  // Генерируем тропинки ПОСЛЕ создания карты
     }
 }
 
@@ -67,6 +68,9 @@ const spawnPoint = { x: MAP_W/2, y: MAP_H/2 };
 const dummyPoint = { x: MAP_W - 350, y: MAP_H/2 };
 const signPoint = { x: 350, y: 250 };
 
+// ГЛОБАЛЬНЫЙ МАССИВ ТАЙЛОВ ТРОПИНКИ
+let pathTiles = [];
+
 // Функция рисования линии-тропинки между двумя точками
 function drawPathBetween(p1, p2, tileSize = 32) {
     const dx = p2.x - p1.x;
@@ -83,15 +87,12 @@ function drawPathBetween(p1, p2, tileSize = 32) {
         const tileX = Math.round(x / tileSize) * tileSize;
         const tileY = Math.round(y / tileSize) * tileSize;
         
-        // Сохраняем позицию для отрисовки
+        // Сохраняем позицию для отрисовки (без дубликатов)
         if(!pathTiles.some(t => t.x === tileX && t.y === tileY)) {
             pathTiles.push({ x: tileX, y: tileY });
         }
     }
 }
-
-// Массив тайлов тропинки
-let pathTiles = [];
 
 function generatePaths() {
     pathTiles = [];
@@ -99,6 +100,7 @@ function generatePaths() {
     drawPathBetween(spawnPoint, dummyPoint);
     // Тропинка от манекена до таблички
     drawPathBetween(dummyPoint, signPoint);
+    console.log("Тропинки сгенерированы! Количество тайлов:", pathTiles.length);
 }
 
 // ========== ТАЙЛЫ ==========
@@ -124,8 +126,6 @@ function generateTileMap() {
             tileMap[row][col] = { type, x, y };
         }
     }
-    // Генерируем тропинки после создания карты
-    generatePaths();
 }
 
 // Отрисовка тропинок поверх травы
@@ -136,7 +136,7 @@ function drawPaths() {
         if(screenX + TILE_SIZE < 0 || screenX > SCREEN_W ||
            screenY + TILE_SIZE < 0 || screenY > SCREEN_H) continue;
         
-        if(sprites.dirt.complete) {
+        if(sprites.dirt.complete && sprites.dirt.naturalWidth > 0) {
             ctx.drawImage(sprites.dirt, screenX, screenY, TILE_SIZE, TILE_SIZE);
         } else {
             ctx.fillStyle = "#8B5A2B";
@@ -323,7 +323,10 @@ let dash = {
     canDash: true
 };
 
+// ========== МАНЕКЕН С ТРЯСКОЙ ==========
 const dummyObj = { x: MAP_W - 350, y: MAP_H/2, radius: 35 };
+let dummyShake = 0; // Сила тряски манекена
+
 function isHitDummy(x, y, rad) { 
     const dx = x - dummyObj.x, dy = y - dummyObj.y;
     return dx*dx + dy*dy < (dummyObj.radius + rad) ** 2;
@@ -406,6 +409,7 @@ class GasterBlaster {
                     stats.hits++; stats.totalDamage += 50;
                     updateStatsUI();
                     addLightSource(dummyObj.x, dummyObj.y, 100, [255,140,80], 0.7);
+                    dummyShake = 12; // ТРЯСКА МАНЕКЕНА ПРИ ПОПАДАНИИ
                 }
             }
         } else if(this.frame < 42) {
@@ -594,6 +598,7 @@ function handleCollisions() {
             updateStatsUI();
             showDamageNumber(p.damage, dummyObj.x, dummyObj.y);
             addLightSource(dummyObj.x, dummyObj.y, 60, [255,160,90], 0.45);
+            dummyShake = 10; // ТРЯСКА МАНЕКЕНА ПРИ ПОПАДАНИИ
             projectiles.splice(i,1);
         }
     }
@@ -647,6 +652,9 @@ function updateMovement() {
     }
     if(dash.active && Math.random() < 0.5) addDustParticle(player.x, player.y);
     if(player.invincible > 0) player.invincible--;
+    
+    // Обновляем тряску манекена
+    if(dummyShake > 0) dummyShake--;
     
     updateCamera();
 }
@@ -775,9 +783,19 @@ function drawSign() {
 
 function drawDummy() {
     if(!isOnScreen(dummyObj.x, dummyObj.y)) return;
-    drawShadowTopDown(dummyObj.x, dummyObj.y, dummyObj.radius, 0.4);
-    const sx = dummyObj.x - camera.x;
-    const sy = dummyObj.y - camera.y;
+    
+    // Эффект тряски манекена
+    let shakeX = 0, shakeY = 0;
+    if(dummyShake > 0) {
+        const intensity = dummyShake / 3;
+        shakeX = (Math.random() - 0.5) * intensity * 4;
+        shakeY = (Math.random() - 0.5) * intensity * 3;
+    }
+    
+    const sx = dummyObj.x - camera.x + shakeX;
+    const sy = dummyObj.y - camera.y + shakeY;
+    
+    drawShadowTopDown(dummyObj.x + shakeX, dummyObj.y + shakeY, dummyObj.radius, 0.4);
     if(sprites.dummy.complete) ctx.drawImage(sprites.dummy, sx - 32, sy - 32, 64, 64);
     ctx.font = "10px monospace"; 
     ctx.fillStyle = "#ffaa66"; 
@@ -1004,7 +1022,7 @@ for(let row = 0; row < TILES_HIGH; row++) {
         tileMap[row][col] = { type: 'grass', x: col * TILE_SIZE, y: row * TILE_SIZE };
     }
 }
-generatePaths();
+generatePaths();  // Генерируем тропинки
 updateCamera();
 updateHealthUI();
 updateDashUI();
