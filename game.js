@@ -1,34 +1,39 @@
-// ========== ОПТИМИЗИРОВАННАЯ ВЕРСИЯ ==========
-// (без console.log, с кэшем градиентов и проверкой видимости)
+// ========== МАКСИМАЛЬНО ОПТИМИЗИРОВАННАЯ ВЕРСИЯ ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// ФИКСИРОВАННЫЕ РАЗМЕРЫ (НЕ МЕНЯЮТСЯ)
 const SCREEN_W = 1100;
 const SCREEN_H = 700;
 canvas.width = SCREEN_W;
 canvas.height = SCREEN_H;
 ctx.imageSmoothingEnabled = false;
 
+// РАЗМЕРЫ КАРТЫ
 const MAP_W = 3000;
 const MAP_H = 2500;
 
-let camera = { x: 0, y: 0, width: SCREEN_W, height: SCREEN_H };
+// FPS ОГРАНИЧЕНИЕ
+let lastFrameTime = 0;
+const FRAME_DELAY = 1000 / 60; // 60 FPS
+let frameSkip = 0;
+
+// КАМЕРА
+let camera = { x: 0, y: 0 };
 
 function updateCamera() {
-    let targetX = player.x - SCREEN_W / 2;
-    let targetY = player.y - SCREEN_H / 2;
-    camera.x = Math.min(Math.max(targetX, 0), MAP_W - SCREEN_W);
-    camera.y = Math.min(Math.max(targetY, 0), MAP_H - SCREEN_H);
+    camera.x = Math.min(Math.max(player.x - SCREEN_W / 2, 0), MAP_W - SCREEN_W);
+    camera.y = Math.min(Math.max(player.y - SCREEN_H / 2, 0), MAP_H - SCREEN_H);
 }
 
-function worldToScreen(worldX, worldY) {
-    return { x: worldX - camera.x, y: worldY - camera.y };
+function worldToScreen(wx, wy) {
+    return { x: wx - camera.x, y: wy - camera.y };
 }
 
-function isOnScreen(worldX, worldY, margin = 100) {
-    return (worldX + margin > camera.x && worldX - margin < camera.x + SCREEN_W &&
-            worldY + margin > camera.y && worldY - margin < camera.y + SCREEN_H);
+function isOnScreen(wx, wy, margin = 100) {
+    return (wx + margin > camera.x && wx - margin < camera.x + SCREEN_W &&
+            wy + margin > camera.y && wy - margin < camera.y + SCREEN_H);
 }
 
 // ========== ЗАГРУЗКА СПРАЙТОВ ==========
@@ -43,9 +48,7 @@ let loadedCount = 0;
 const totalSprites = 9;
 
 function checkAllSpritesLoaded() { 
-    if(++loadedCount === totalSprites) {
-        generateTileMap();
-    }
+    if(++loadedCount === totalSprites) generateTileMap();
 }
 
 sprites.sans.src = "sprites/sans.png"; sprites.sans.onload = checkAllSpritesLoaded;
@@ -96,25 +99,27 @@ function drawTileFloor() {
     const endRow = Math.min(TILES_HIGH, Math.ceil((camera.y + SCREEN_H) / TILE_SIZE) + 1);
     
     for(let row = startRow; row < endRow; row++) {
+        const tileRow = tileMap[row];
         for(let col = startCol; col < endCol; col++) {
-            const tile = tileMap[row][col];
+            const tile = tileRow[col];
             if(!tile) continue;
-            const screenPos = worldToScreen(tile.x, tile.y);
-            if(screenPos.x + TILE_SIZE < 0 || screenPos.x > SCREEN_W ||
-               screenPos.y + TILE_SIZE < 0 || screenPos.y > SCREEN_H) continue;
+            const screenX = tile.x - camera.x;
+            const screenY = tile.y - camera.y;
+            if(screenX + TILE_SIZE < 0 || screenX > SCREEN_W ||
+               screenY + TILE_SIZE < 0 || screenY > SCREEN_H) continue;
             
-            let sprite = tile.type === 'grass' ? sprites.grass : sprites.grass_flower;
-            if(sprite && sprite.complete && sprite.naturalWidth > 0) {
-                ctx.drawImage(sprite, screenPos.x, screenPos.y, TILE_SIZE, TILE_SIZE);
+            const sprite = tile.type === 'grass' ? sprites.grass : sprites.grass_flower;
+            if(sprite.complete) {
+                ctx.drawImage(sprite, screenX, screenY, TILE_SIZE, TILE_SIZE);
             } else {
                 ctx.fillStyle = tile.type === 'grass' ? '#4a7a4a' : '#6a9a6a';
-                ctx.fillRect(screenPos.x, screenPos.y, TILE_SIZE, TILE_SIZE);
+                ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
             }
         }
     }
 }
 
-// ========== ЛАМПЫ С КЭШЕМ ГРАДИЕНТОВ ==========
+// ========== ЛАМПЫ С КЭШЕМ ==========
 let lamps = [
     { x: 350, y: 280, radius: 140, color: [255,220,150], baseIntensity: 0.85, phase: 0, speed: 0.02, active: true },
     { x: 850, y: 450, radius: 130, color: [255,220,150], baseIntensity: 0.8, phase: 1.5, speed: 0.025, active: true },
@@ -133,24 +138,28 @@ let lampGradientCache = [];
 
 function updateLampGradients() {
     lampTime += 0.016;
-    lampGradientCache = lamps.map(lamp => {
-        if (!lamp.active) return null;
+    for(let i = 0; i < lamps.length; i++) {
+        const lamp = lamps[i];
+        if(!lamp.active) {
+            lampGradientCache[i] = null;
+            continue;
+        }
         const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
         const intensity = lamp.baseIntensity * flicker;
         const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, lamp.radius);
         grad.addColorStop(0, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity})`);
         grad.addColorStop(0.4, `rgba(${lamp.color[0]},${lamp.color[1]},${lamp.color[2]}, ${intensity * 0.45})`);
         grad.addColorStop(1, 'rgba(0,0,0,0)');
-        return grad;
-    });
+        lampGradientCache[i] = grad;
+    }
 }
 
-function checkLampClick(worldX, worldY) {
+function checkLampClick(wx, wy) {
     for(let i = 0; i < lamps.length; i++) {
         const lamp = lamps[i];
-        const dx = worldX - lamp.x;
-        const dy = worldY - (lamp.y - 15);
-        if(Math.hypot(dx, dy) < 30) {
+        const dx = wx - lamp.x;
+        const dy = wy - (lamp.y - 15);
+        if(dx*dx + dy*dy < 900) {
             lamp.active = !lamp.active;
             addFloatingText(lamp.active ? "💡 ЛАМПА ВКЛЮЧЕНА" : "💡 ЛАМПА ВЫКЛЮЧЕНА", lamp.x, lamp.y-40, lamp.active ? "#aaffaa" : "#ffaa66", true);
             break;
@@ -158,11 +167,12 @@ function checkLampClick(worldX, worldY) {
     }
 }
 
-// ========== ЧАСТИЦЫ ПЫЛИ ==========
+// ========== ОПТИМИЗИРОВАННЫЕ ЧАСТИЦЫ ==========
 let dustParticles = [];
+const MAX_DUST = 40;
 
 function addDustParticle(x, y) {
-    if(dustParticles.length > 60) dustParticles.shift();
+    if(dustParticles.length > MAX_DUST) dustParticles.shift();
     dustParticles.push({
         x: x + (Math.random() - 0.5) * 15,
         y: y + 15,
@@ -174,43 +184,47 @@ function addDustParticle(x, y) {
 
 function updateDustParticles() {
     for(let i = dustParticles.length-1; i >= 0; i--) {
-        dustParticles[i].life--;
-        dustParticles[i].y += 1;
-        dustParticles[i].alpha -= 0.02;
-        if(dustParticles[i].life <= 0 || dustParticles[i].alpha <= 0) {
-            dustParticles.splice(i,1);
-        }
+        const p = dustParticles[i];
+        p.life--;
+        p.y += 1;
+        p.alpha -= 0.02;
+        if(p.life <= 0 || p.alpha <= 0) dustParticles.splice(i,1);
     }
 }
 
 function drawDustParticles() {
     for(let p of dustParticles) {
-        if(!isOnScreen(p.x, p.y)) continue;
-        const screenPos = worldToScreen(p.x, p.y);
+        if(!isOnScreen(p.x, p.y, 50)) continue;
+        const sx = p.x - camera.x;
+        const sy = p.y - camera.y;
         ctx.beginPath();
-        ctx.arc(screenPos.x, screenPos.y, p.size * (p.life/20), 0, Math.PI*2);
+        ctx.arc(sx, sy, p.size * (p.life/20), 0, Math.PI*2);
         ctx.fillStyle = `rgba(120, 100, 70, ${p.alpha * (p.life/20)})`;
         ctx.fill();
     }
 }
 
-// ========== ДИНАМИЧЕСКОЕ ОСВЕЩЕНИЕ ==========
+// ========== ОПТИМИЗИРОВАННОЕ ОСВЕЩЕНИЕ ==========
 let lightSources = [];
 let ambientDarkness = 0.3;
+let lightingCounter = 0;
 
 function addLightSource(x, y, radius, color = [255,200,100], intensity = 0.7) {
-    lightSources.push({ x, y, radius, color, intensity, life: 22, maxLife: 22 });
+    lightSources.push({ x, y, radius, color, intensity, life: 22 });
 }
 
 function updateLightSources() {
     for(let i = lightSources.length-1; i >= 0; i--) {
         lightSources[i].life--;
-        lightSources[i].intensity = lightSources[i].life / lightSources[i].maxLife;
+        lightSources[i].intensity = lightSources[i].life / 22;
         if(lightSources[i].life <= 0) lightSources.splice(i,1);
     }
 }
 
 function drawDynamicLighting() {
+    lightingCounter++;
+    if(lightingCounter % 2 !== 0) return; // каждый 2-й кадр
+    
     ctx.fillStyle = `rgba(0,0,0,${ambientDarkness})`;
     ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
     ctx.globalCompositeOperation = 'lighter';
@@ -219,18 +233,20 @@ function drawDynamicLighting() {
         const lamp = lamps[i];
         const grad = lampGradientCache[i];
         if(lamp.active && grad) {
-            const screenPos = worldToScreen(lamp.x, lamp.y - 15);
+            const sx = lamp.x - camera.x;
+            const sy = lamp.y - 15 - camera.y;
             ctx.save();
-            ctx.translate(screenPos.x, screenPos.y);
+            ctx.translate(sx, sy);
             ctx.fillStyle = grad;
-            ctx.fillRect(-screenPos.x, -screenPos.y, SCREEN_W, SCREEN_H);
+            ctx.fillRect(-sx, -sy, SCREEN_W, SCREEN_H);
             ctx.restore();
         }
     }
     
     for(let src of lightSources) {
-        const screenPos = worldToScreen(src.x, src.y);
-        const grad = ctx.createRadialGradient(screenPos.x, screenPos.y, 0, screenPos.x, screenPos.y, src.radius);
+        const sx = src.x - camera.x;
+        const sy = src.y - camera.y;
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, src.radius);
         grad.addColorStop(0, `rgba(${src.color[0]},${src.color[1]},${src.color[2]}, ${src.intensity * 0.8})`);
         grad.addColorStop(0.5, `rgba(${src.color[0]},${src.color[1]},${src.color[2]}, ${src.intensity * 0.3})`);
         grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -267,16 +283,17 @@ let dash = {
 const dummyObj = { x: MAP_W - 350, y: MAP_H/2, radius: 35 };
 function isHitDummy(x, y, rad) { 
     const dx = x - dummyObj.x, dy = y - dummyObj.y;
-    return (dx*dx + dy*dy) < (dummyObj.radius + rad) ** 2;
+    return dx*dx + dy*dy < (dummyObj.radius + rad) ** 2;
 }
 
-function doesLaserHitDummy(startX, startY, angle, length) {
+function doesLaserHitDummy(sx, sy, angle, length) {
     const dirX = Math.cos(angle), dirY = Math.sin(angle);
-    const dx = dummyObj.x - startX, dy = dummyObj.y - startY;
+    const dx = dummyObj.x - sx, dy = dummyObj.y - sy;
     const t = dx * dirX + dy * dirY;
     if(t < 0 || t > length) return false;
-    const closestX = startX + dirX * t, closestY = startY + dirY * t;
-    return Math.hypot(dummyObj.x - closestX, dummyObj.y - closestY) < dummyObj.radius + 15;
+    const cx = sx + dirX * t, cy = sy + dirY * t;
+    const ddx = dummyObj.x - cx, ddy = dummyObj.y - cy;
+    return ddx*ddx + ddy*ddy < (dummyObj.radius + 15) ** 2;
 }
 
 const sign = { x: 350, y: 250 };
@@ -290,7 +307,7 @@ function updateStatsUI() {
 }
 function isPlayerNearSign() { 
     const dx = player.x - sign.x, dy = player.y - sign.y;
-    return (dx*dx + dy*dy) < 3025;
+    return dx*dx + dy*dy < 3025;
 }
 
 // ========== СНАРЯДЫ ==========
@@ -308,10 +325,11 @@ class BoneProjectile {
         if(this.x < -200 || this.x > MAP_W+200 || this.y < -200 || this.y > MAP_H+200) this.life = false;
     }
     draw() {
-        if(!isOnScreen(this.x, this.y)) return;
-        const screenPos = worldToScreen(this.x, this.y);
+        if(!isOnScreen(this.x, this.y, 50)) return;
+        const sx = this.x - camera.x;
+        const sy = this.y - camera.y;
         ctx.save();
-        ctx.translate(screenPos.x, screenPos.y);
+        ctx.translate(sx, sy);
         ctx.rotate(this.angle);
         if (sprites.bone.complete) ctx.drawImage(sprites.bone, -18, -12, 36, 24);
         else { ctx.fillStyle = "#edd6aa"; ctx.fillRect(-14, -6, 28, 12); }
@@ -323,9 +341,9 @@ class BoneProjectile {
 let activeGasterBlasters = [];
 
 class GasterBlaster {
-    constructor(x, y, targetX, targetY) {
+    constructor(x, y, tx, ty) {
         this.x = x; this.y = y;
-        this.angleToTarget = Math.atan2(targetY - y, targetX - x);
+        this.angle = Math.atan2(ty - y, tx - x);
         this.frame = 0; this.maxFrames = 55;
         this.beamAlpha = 0; this.hasDamaged = false;
         this.size = 0;
@@ -336,7 +354,7 @@ class GasterBlaster {
         if(this.frame < 22) {
             this.size = Math.min(1, this.frame / 22);
             if(this.frame >= 16 && this.frame <= 20 && !this.hasDamaged) {
-                if(doesLaserHitDummy(this.x, this.y, this.angleToTarget, 600)) {
+                if(doesLaserHitDummy(this.x, this.y, this.angle, 600)) {
                     this.hasDamaged = true;
                     showDamageNumber(50, dummyObj.x, dummyObj.y);
                     stats.hits++; stats.totalDamage += 50;
@@ -354,57 +372,59 @@ class GasterBlaster {
         return true;
     }
     draw() {
-        if(!isOnScreen(this.x, this.y) && this.beamAlpha === 0) return;
-        const screenPos = worldToScreen(this.x, this.y);
-        const dirX = Math.cos(this.angleToTarget), dirY = Math.sin(this.angleToTarget);
-        const currentSize = 70 * (0.7 + this.size * 0.3);
+        if(!isOnScreen(this.x, this.y, 150) && this.beamAlpha === 0) return;
+        const sx = this.x - camera.x;
+        const sy = this.y - camera.y;
+        const dirX = Math.cos(this.angle), dirY = Math.sin(this.angle);
+        const curSize = 70 * (0.7 + this.size * 0.3);
         
         ctx.save();
         if (sprites.gaster.complete) {
-            ctx.translate(screenPos.x, screenPos.y);
-            ctx.rotate(this.angleToTarget + Math.PI/2);
-            ctx.drawImage(sprites.gaster, -currentSize/2, -currentSize/2, currentSize, currentSize);
+            ctx.translate(sx, sy);
+            ctx.rotate(this.angle + Math.PI/2);
+            ctx.drawImage(sprites.gaster, -curSize/2, -curSize/2, curSize, curSize);
             ctx.restore();
             ctx.save();
         }
         
         if(this.frame >= 22 && this.beamAlpha > 0) {
-            const beamLength = 650;
-            const endX = this.x + dirX * beamLength;
-            const endY = this.y + dirY * beamLength;
-            const screenEnd = worldToScreen(endX, endY);
+            const len = 650;
+            const ex = this.x + dirX * len;
+            const ey = this.y + dirY * len;
+            const sex = ex - camera.x;
+            const sey = ey - camera.y;
             
             ctx.beginPath();
-            ctx.moveTo(screenPos.x, screenPos.y);
-            ctx.lineTo(screenEnd.x, screenEnd.y);
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sex, sey);
             ctx.lineWidth = 32;
             ctx.strokeStyle = `rgba(255, 220, 100, ${this.beamAlpha * 0.35})`;
             ctx.stroke();
             
             ctx.beginPath();
-            ctx.moveTo(screenPos.x, screenPos.y);
-            ctx.lineTo(screenEnd.x, screenEnd.y);
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sex, sey);
             ctx.lineWidth = 18;
-            const gradient = ctx.createLinearGradient(screenPos.x, screenPos.y, screenEnd.x, screenEnd.y);
-            gradient.addColorStop(0, `rgba(255, 240, 150, ${this.beamAlpha})`);
-            gradient.addColorStop(0.5, `rgba(255, 220, 80, ${this.beamAlpha * 0.9})`);
-            gradient.addColorStop(1, `rgba(255, 180, 40, ${this.beamAlpha * 0.7})`);
-            ctx.strokeStyle = gradient;
+            const grad = ctx.createLinearGradient(sx, sy, sex, sey);
+            grad.addColorStop(0, `rgba(255, 240, 150, ${this.beamAlpha})`);
+            grad.addColorStop(0.5, `rgba(255, 220, 80, ${this.beamAlpha * 0.9})`);
+            grad.addColorStop(1, `rgba(255, 180, 40, ${this.beamAlpha * 0.7})`);
+            ctx.strokeStyle = grad;
             ctx.stroke();
             
             ctx.beginPath();
-            ctx.moveTo(screenPos.x, screenPos.y);
-            ctx.lineTo(screenEnd.x, screenEnd.y);
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sex, sey);
             ctx.lineWidth = 6;
             ctx.strokeStyle = `rgba(255, 255, 200, ${this.beamAlpha})`;
             ctx.stroke();
             
             ctx.beginPath();
-            ctx.arc(screenPos.x, screenPos.y, 16, 0, Math.PI*2);
+            ctx.arc(sx, sy, 16, 0, Math.PI*2);
             ctx.fillStyle = `rgba(255, 220, 100, ${this.beamAlpha * 0.8})`;
             ctx.fill();
             ctx.beginPath();
-            ctx.arc(screenPos.x, screenPos.y, 8, 0, Math.PI*2);
+            ctx.arc(sx, sy, 8, 0, Math.PI*2);
             ctx.fillStyle = `rgba(255, 255, 200, ${this.beamAlpha})`;
             ctx.fill();
         }
@@ -412,17 +432,17 @@ class GasterBlaster {
     }
 }
 
-// ========== ЭФФЕКТЫ С ПРОВЕРКОЙ ВИДИМОСТИ ==========
+// ========== ЭФФЕКТЫ ==========
 let effects = [];
 
-function showDamageNumber(damage, x, y) {
-    effects.push({ type: "damageText", text: `${damage}`, x, y, life: 25 });
+function showDamageNumber(dmg, x, y) {
+    effects.push({ type: "damageText", text: `${dmg}`, x, y, life: 25 });
 }
 function addFloatingText(msg, x, y, color="#fff0b5", isWorld = true) {
     effects.push({ type: "floatText", text: msg, x, y, life: 35, color, isWorld });
 }
 function addDashSparks(x, y) {
-    for(let i = 0; i < 8; i++) {
+    for(let i = 0; i < 6; i++) {
         effects.push({
             type: "spark", x: x + (Math.random() - 0.5) * 35, y: y + (Math.random() - 0.5) * 35,
             life: 12, vx: (Math.random() - 0.5) * 3.5, vy: (Math.random() - 0.5) * 3.5 - 1.5, isWorld: true
@@ -438,10 +458,10 @@ let mouseInCanvas = false;
 function updateCursor(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-    const screenX = (clientX - rect.left) * scaleX;
-    const screenY = (clientY - rect.top) * scaleY;
-    cursorWorld.x = Math.min(Math.max(screenX + camera.x, 0), MAP_W);
-    cursorWorld.y = Math.min(Math.max(screenY + camera.y, 0), MAP_H);
+    const sx = (clientX - rect.left) * scaleX;
+    const sy = (clientY - rect.top) * scaleY;
+    cursorWorld.x = Math.min(Math.max(sx + camera.x, 0), MAP_W);
+    cursorWorld.y = Math.min(Math.max(sy + camera.y, 0), MAP_H);
     player.angle = Math.atan2(cursorWorld.y - player.y, cursorWorld.x - player.x);
 }
 
@@ -450,9 +470,9 @@ canvas.addEventListener('mouseleave', () => { mouseInCanvas = false; });
 canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-    const screenX = (e.clientX - rect.left) * scaleX;
-    const screenY = (e.clientY - rect.top) * scaleY;
-    checkLampClick(screenX + camera.x, screenY + camera.y);
+    const sx = (e.clientX - rect.left) * scaleX;
+    const sy = (e.clientY - rect.top) * scaleY;
+    checkLampClick(sx + camera.x, sy + camera.y);
 });
 canvas.addEventListener('touchmove', (e) => { e.preventDefault(); updateCursor(e.touches[0].clientX, e.touches[0].clientY); });
 canvas.addEventListener('touchstart', (e) => { 
@@ -460,9 +480,9 @@ canvas.addEventListener('touchstart', (e) => {
     updateCursor(e.touches[0].clientX, e.touches[0].clientY);
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
-    const screenX = (e.touches[0].clientX - rect.left) * scaleX;
-    const screenY = (e.touches[0].clientY - rect.top) * scaleY;
-    checkLampClick(screenX + camera.x, screenY + camera.y);
+    const sx = (e.touches[0].clientX - rect.left) * scaleX;
+    const sy = (e.touches[0].clientY - rect.top) * scaleY;
+    checkLampClick(sx + camera.x, sy + camera.y);
 });
 
 // ========== АТАКИ ==========
@@ -576,8 +596,8 @@ function updateMovement() {
     player.y = Math.min(Math.max(ny, player.radius+20), MAP_H - player.radius-20);
     
     if(isMoving && !dash.active) {
-        const moveDist = Math.hypot(player.x - prevX, player.y - prevY);
-        if(moveDist > 2 && Math.random() < 0.3) addDustParticle(player.x, player.y);
+        const moveDist = (player.x - prevX)*(player.x - prevX) + (player.y - prevY)*(player.y - prevY);
+        if(moveDist > 4 && Math.random() < 0.3) addDustParticle(player.x, player.y);
     }
     if(dash.active && Math.random() < 0.5) addDustParticle(player.x, player.y);
     if(player.invincible > 0) player.invincible--;
@@ -604,13 +624,15 @@ function dashAction() {
 }
 
 function updateProjectiles() { 
-    for(let i = projectiles.length-1; i >= 0; i--) {
+    let i = projectiles.length;
+    while(i--) {
         projectiles[i].update();
         if(!projectiles[i].life) projectiles.splice(i,1);
     }
 }
 function updateGasterBlasters() { 
-    for(let i = activeGasterBlasters.length-1; i >= 0; i--) {
+    let i = activeGasterBlasters.length;
+    while(i--) {
         if(!activeGasterBlasters[i].update()) activeGasterBlasters.splice(i,1);
     }
 }
@@ -621,35 +643,37 @@ function updateCooldowns() {
     updateCooldownUI();
 }
 function updateEffects() {
-    for(let i = effects.length-1; i >= 0; i--) {
-        effects[i].life--;
-        if(effects[i].type === "spark") { 
-            effects[i].x += effects[i].vx; 
-            effects[i].y += effects[i].vy; 
+    let i = effects.length;
+    while(i--) {
+        const e = effects[i];
+        e.life--;
+        if(e.type === "spark") { 
+            e.x += e.vx; 
+            e.y += e.vy; 
         }
-        if(effects[i].life <= 0) effects.splice(i,1);
+        if(e.life <= 0) effects.splice(i,1);
     }
 }
 
 function updateDashUI() { 
-    const dashEl = document.getElementById('dashReady');
-    if(dashEl) {
-        if(dash.active) dashEl.innerText = "РЫВОК";
-        else if(dash.cooldown > 0) dashEl.innerText = `${Math.ceil(dash.cooldown/6)/10}с`;
-        else dashEl.innerText = "ГОТОВ";
+    const el = document.getElementById('dashReady');
+    if(el) {
+        if(dash.active) el.innerText = "РЫВОК";
+        else if(dash.cooldown > 0) el.innerText = `${Math.ceil(dash.cooldown/6)/10}с`;
+        else el.innerText = "ГОТОВ";
     }
 }
 function updateCooldownUI() {
-    const skill1 = document.getElementById('skill1Hud');
-    const skill2 = document.getElementById('skill2Hud');
-    const skill3 = document.getElementById('skill3Hud');
-    if(skill1) skill1.classList.toggle('cooldown-active', cooldowns.skill1 > 0);
-    if(skill2) skill2.classList.toggle('cooldown-active', cooldowns.skill2 > 0);
-    if(skill3) skill3.classList.toggle('cooldown-active', cooldowns.skill3 > 0);
+    const s1 = document.getElementById('skill1Hud');
+    const s2 = document.getElementById('skill2Hud');
+    const s3 = document.getElementById('skill3Hud');
+    if(s1) s1.classList.toggle('cooldown-active', cooldowns.skill1 > 0);
+    if(s2) s2.classList.toggle('cooldown-active', cooldowns.skill2 > 0);
+    if(s3) s3.classList.toggle('cooldown-active', cooldowns.skill3 > 0);
 }
 function updateHealthUI() { 
-    const hpEl = document.getElementById('hpValue');
-    if(hpEl) hpEl.innerText = player.hp; 
+    const el = document.getElementById('hpValue');
+    if(el) el.innerText = player.hp; 
 }
 function resetGame() { 
     player.hp = player.maxHp; 
@@ -667,10 +691,11 @@ function resetGame() {
     updateCamera();
 }
 
-function drawShadowTopDown(worldX, worldY, radius, alpha = 0.35) {
-    const screenPos = worldToScreen(worldX, worldY);
+function drawShadowTopDown(wx, wy, rad, alpha = 0.35) {
+    const sx = wx - camera.x;
+    const sy = wy - camera.y;
     ctx.beginPath();
-    ctx.ellipse(screenPos.x, screenPos.y + radius * 0.35, radius * 0.85, radius * 0.4, 0, 0, Math.PI*2);
+    ctx.ellipse(sx, sy + rad * 0.35, rad * 0.85, rad * 0.4, 0, 0, Math.PI*2);
     ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
     ctx.fill();
 }
@@ -678,52 +703,57 @@ function drawShadowTopDown(worldX, worldY, radius, alpha = 0.35) {
 function drawLamps() {
     for(let lamp of lamps) {
         if(!isOnScreen(lamp.x, lamp.y, 100)) continue;
-        const screenPos = worldToScreen(lamp.x, lamp.y);
+        const sx = lamp.x - camera.x;
+        const sy = lamp.y - camera.y;
         const sprite = lamp.active ? sprites.lamp_on : sprites.lamp_off;
         if(sprite.complete) {
-            ctx.drawImage(sprite, screenPos.x - 22, screenPos.y - 35, 44, 70);
+            ctx.drawImage(sprite, sx - 22, sy - 35, 44, 70);
         } else {
             ctx.fillStyle = lamp.active ? "#ffaa66" : "#5a4a3a";
-            ctx.fillRect(screenPos.x - 15, screenPos.y - 30, 30, 50);
+            ctx.fillRect(sx - 15, sy - 30, 30, 50);
         }
     }
 }
 
 function drawSign() {
     if(!isOnScreen(sign.x, sign.y)) return;
-    const screenPos = worldToScreen(sign.x, sign.y);
-    if(sprites.sign.complete) ctx.drawImage(sprites.sign, screenPos.x - 32, screenPos.y - 32, 64, 64);
+    const sx = sign.x - camera.x;
+    const sy = sign.y - camera.y;
+    if(sprites.sign.complete) ctx.drawImage(sprites.sign, sx - 32, sy - 32, 64, 64);
     if(isPlayerNearSign()) {
         ctx.font = "bold 13px monospace";
         ctx.fillStyle = "#ffffaa";
-        ctx.fillText("📜 НАЖМИ E", screenPos.x-42, screenPos.y-40);
+        ctx.fillText("📜 НАЖМИ E", sx-42, sy-40);
     }
 }
 
 function drawDummy() {
     if(!isOnScreen(dummyObj.x, dummyObj.y)) return;
     drawShadowTopDown(dummyObj.x, dummyObj.y, dummyObj.radius, 0.4);
-    const screenPos = worldToScreen(dummyObj.x, dummyObj.y);
-    if(sprites.dummy.complete) ctx.drawImage(sprites.dummy, screenPos.x - 32, screenPos.y - 32, 64, 64);
+    const sx = dummyObj.x - camera.x;
+    const sy = dummyObj.y - camera.y;
+    if(sprites.dummy.complete) ctx.drawImage(sprites.dummy, sx - 32, sy - 32, 64, 64);
     ctx.font = "10px monospace"; 
     ctx.fillStyle = "#ffaa66"; 
-    ctx.fillText("БЕССМЕРТЕН", screenPos.x-35, screenPos.y-38);
+    ctx.fillText("БЕССМЕРТЕН", sx-35, sy-38);
 }
 
 function drawSans() {
-    const screenPos = worldToScreen(player.x, player.y);
+    const sx = player.x - camera.x;
+    const sy = player.y - camera.y;
     ctx.save();
     drawShadowTopDown(player.x, player.y, player.radius, 0.45);
     
     if(dash.active && dash.afterImages.length) {
         for(let i = 0; i < dash.afterImages.length; i++) {
             const img = dash.afterImages[i];
-            const imgScreen = worldToScreen(img.x, img.y);
+            const isx = img.x - camera.x;
+            const isy = img.y - camera.y;
             const alpha = 0.3 - i * 0.045;
             if(alpha <= 0) continue;
             ctx.globalAlpha = alpha;
             ctx.beginPath();
-            ctx.arc(imgScreen.x, imgScreen.y, 20 - i*1.2, 0, Math.PI*2);
+            ctx.arc(isx, isy, 20 - i*1.2, 0, Math.PI*2);
             ctx.fillStyle = `rgba(80, 200, 255, ${alpha})`;
             ctx.fill();
         }
@@ -731,47 +761,47 @@ function drawSans() {
     }
     
     if(sprites.sans.complete) {
-        ctx.translate(screenPos.x, screenPos.y);
+        ctx.translate(sx, sy);
         ctx.rotate(player.angle + Math.PI/2);
         ctx.drawImage(sprites.sans, -26, -26, 52, 52);
     }
     ctx.restore();
     
     if(player.invincible > 0 && (Math.floor(Date.now() / 50) % 4 < 2)) {
-        ctx.beginPath(); ctx.arc(screenPos.x, screenPos.y-2, 30, 0, Math.PI*2);
+        ctx.beginPath(); ctx.arc(sx, sy-2, 30, 0, Math.PI*2);
         ctx.strokeStyle = "#ffecb3"; ctx.lineWidth = 2.5; ctx.stroke();
     }
     
     const ex = Math.cos(player.angle)*26, ey = Math.sin(player.angle)*26;
     ctx.beginPath(); 
-    ctx.moveTo(screenPos.x+ex, screenPos.y-4+ey);
-    ctx.lineTo(screenPos.x+ex-5, screenPos.y-4+ey-5);
-    ctx.lineTo(screenPos.x+ex+5, screenPos.y-4+ey-5);
+    ctx.moveTo(sx+ex, sy-4+ey);
+    ctx.lineTo(sx+ex-5, sy-4+ey-5);
+    ctx.lineTo(sx+ex+5, sy-4+ey-5);
     ctx.fillStyle = "#ffcc88aa"; 
     ctx.fill();
 }
 
 function drawEffects() {
     for(let e of effects) {
-        let drawX = e.x, drawY = e.y;
+        let dx = e.x, dy = e.y;
         if(e.isWorld !== false) {
             if(!isOnScreen(e.x, e.y, 150)) continue;
-            const screenPos = worldToScreen(e.x, e.y);
-            drawX = screenPos.x; drawY = screenPos.y;
+            dx = e.x - camera.x;
+            dy = e.y - camera.y;
         }
         if(e.type === "floatText") { 
             ctx.font = "14px monospace"; 
             ctx.fillStyle = e.color; 
-            ctx.fillText(e.text, drawX-22, drawY - (30-e.life)/1.1); 
+            ctx.fillText(e.text, dx-22, dy - (30-e.life)/1.1); 
         }
         else if(e.type === "damageText") { 
             const size = 20 - Math.floor(e.life/6);
             ctx.font = `bold ${size}px monospace`; 
             ctx.fillStyle = `rgba(255,100,50,${Math.min(1,e.life/10)})`; 
-            ctx.fillText(e.text, drawX-10, drawY - 12 - (22-e.life)); 
+            ctx.fillText(e.text, dx-10, dy - 12 - (22-e.life)); 
         }
         else if(e.type === "spark") { 
-            ctx.beginPath(); ctx.arc(drawX, drawY, 2.5, 0, Math.PI*2); 
+            ctx.beginPath(); ctx.arc(dx, dy, 2.5, 0, Math.PI*2); 
             ctx.fillStyle = `rgba(255, 200, 100, ${e.life/12})`; 
             ctx.fill(); 
         }
@@ -780,24 +810,27 @@ function drawEffects() {
 
 function drawCursorMarker() {
     if(!mouseInCanvas) return;
-    const screenCursor = worldToScreen(cursorWorld.x, cursorWorld.y);
-    ctx.beginPath(); ctx.arc(screenCursor.x, screenCursor.y, 7, 0, Math.PI*2); 
+    const sx = cursorWorld.x - camera.x;
+    const sy = cursorWorld.y - camera.y;
+    ctx.beginPath(); ctx.arc(sx, sy, 7, 0, Math.PI*2); 
     ctx.strokeStyle = "#ffaa44"; ctx.lineWidth = 1.5; ctx.setLineDash([4,5]); ctx.stroke();
-    ctx.beginPath(); ctx.arc(screenCursor.x, screenCursor.y, 2.5, 0, Math.PI*2); 
+    ctx.beginPath(); ctx.arc(sx, sy, 2.5, 0, Math.PI*2); 
     ctx.fillStyle = "#ffaa66aa"; ctx.fill(); ctx.setLineDash([]);
 }
 
 function drawDirectionLine() {
     if(!mouseInCanvas) return;
-    const screenPos = worldToScreen(player.x, player.y);
-    const tx = screenPos.x + Math.cos(player.angle)*45, ty = screenPos.y + Math.sin(player.angle)*45;
-    ctx.beginPath(); ctx.moveTo(screenPos.x, screenPos.y); ctx.lineTo(tx, ty); 
+    const sx = player.x - camera.x;
+    const sy = player.y - camera.y;
+    const tx = sx + Math.cos(player.angle)*45, ty = sy + Math.sin(player.angle)*45;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(tx, ty); 
     ctx.strokeStyle = "#fffbd0aa"; ctx.lineWidth = 1.5; ctx.setLineDash([5,7]); ctx.stroke();
     ctx.setLineDash([]);
 }
 
 function updateLighting() { updateLightSources(); }
 
+// ========== ОКНО ==========
 const infoWindow = document.getElementById('infoWindow');
 const closeBtn = document.getElementById('closeWindowBtn');
 function openInfoWindow() { if(!windowOpen) { updateStatsUI(); infoWindow.style.display = 'flex'; windowOpen = true; } }
@@ -811,6 +844,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+// ========== УПРАВЛЕНИЕ ==========
 window.addEventListener('keydown', (e) => {
     const k = e.key;
     if(k === 'w' || k === 'W') move.up = true;
@@ -833,19 +867,15 @@ window.addEventListener('keyup', (e) => {
 canvas.addEventListener('click', () => canvas.focus());
 canvas.focus();
 
+// ========== ПОЛНОЭКРАННЫЙ РЕЖИМ ==========
 function resizeCanvas() {
-    const gameAspect = SCREEN_W / SCREEN_H;
-    let newWidth = window.innerWidth;
-    let newHeight = window.innerHeight;
-    if (newWidth / newHeight > gameAspect) {
-        newWidth = newHeight * gameAspect;
-    } else {
-        newHeight = newWidth / gameAspect;
-    }
-    canvas.style.width = `${newWidth}px`;
-    canvas.style.height = `${newHeight}px`;
-    canvas.style.left = `${(window.innerWidth - newWidth) / 2}px`;
-    canvas.style.top = `${(window.innerHeight - newHeight) / 2}px`;
+    const asp = SCREEN_W / SCREEN_H;
+    let w = window.innerWidth, h = window.innerHeight;
+    if(w / h > asp) { w = h * asp; } else { h = w / asp; }
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    canvas.style.left = `${(window.innerWidth - w) / 2}px`;
+    canvas.style.top = `${(window.innerHeight - h) / 2}px`;
 }
 
 function toggleFullscreen() {
@@ -864,6 +894,7 @@ if(fullscreenBtn) fullscreenBtn.addEventListener('click', toggleFullscreen);
 
 setTimeout(resizeCanvas, 100);
 
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 tileMap = [];
 for(let row = 0; row < TILES_HIGH; row++) {
     tileMap[row] = [];
@@ -875,6 +906,7 @@ updateCamera();
 updateHealthUI();
 updateDashUI();
 
+// ========== ГЛАВНЫЙ ЦИКЛ С FPS ОГРАНИЧЕНИЕМ ==========
 function gameUpdate() { 
     updateMovement(); 
     updateProjectiles(); 
@@ -902,11 +934,13 @@ function render() {
     drawDynamicLighting();
 }
 
-function loop() { 
-    gameUpdate(); 
-    render(); 
+function loop(currentTime) {
     requestAnimationFrame(loop);
+    if(currentTime - lastFrameTime < FRAME_DELAY) return;
+    lastFrameTime = currentTime;
+    gameUpdate();
+    render();
 }
 
 resetGame();
-loop();
+loop(0);
