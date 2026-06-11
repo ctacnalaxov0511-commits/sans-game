@@ -1,4 +1,4 @@
-// ========== ИГРА С ТРОПИНКАМИ И ТРЯСКОЙ МАНЕКЕНА ==========
+// ========== ИГРА (БЕЗ ТРОПИНОК, С ТРЯСКОЙ МАНЕКЕНА) ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -36,19 +36,17 @@ const sprites = {
     sans: new Image(), dummy: new Image(), gaster: new Image(), 
     bone: new Image(), sign: new Image(), 
     lamp_on: new Image(), lamp_off: new Image(),
-    grass: new Image(), grass_flower: new Image(),
-    dirt: new Image()
+    grass: new Image(), grass_flower: new Image()
 };
 
 let loadedCount = 0;
-const totalSprites = 10;
+const totalSprites = 9;
 
 function checkAllSpritesLoaded() { 
     if(++loadedCount === totalSprites) {
         const loader = document.getElementById('loader');
         if(loader) loader.remove();
         generateTileMap();
-        generatePaths();
     }
 }
 
@@ -61,55 +59,6 @@ sprites.lamp_on.src = "sprites/lamp_on.png"; sprites.lamp_on.onload = checkAllSp
 sprites.lamp_off.src = "sprites/lamp_off.png"; sprites.lamp_off.onload = checkAllSpritesLoaded;
 sprites.grass.src = "sprites/grass.png"; sprites.grass.onload = checkAllSpritesLoaded;
 sprites.grass_flower.src = "sprites/grass_flower.png"; sprites.grass_flower.onload = checkAllSpritesLoaded;
-sprites.dirt.src = "sprites/dirt.png"; sprites.dirt.onload = checkAllSpritesLoaded;
-
-// ========== ТРОПИНКИ ==========
-const spawnPoint = { x: MAP_W/2, y: MAP_H/2 };
-const dummyPoint = { x: MAP_W - 350, y: MAP_H/2 };
-const signPoint = { x: 350, y: 250 };
-
-let pathTiles = [];
-
-function drawPathBetween(p1, p2, tileSize = 32) {
-    const dx = p2.x - p1.x;
-    const dy = p2.y - p1.y;
-    const distance = Math.hypot(dx, dy);
-    const steps = Math.ceil(distance / tileSize);
-    
-    for(let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const x = p1.x + dx * t;
-        const y = p1.y + dy * t;
-        
-        const tileX = Math.round(x / tileSize) * tileSize;
-        const tileY = Math.round(y / tileSize) * tileSize;
-        
-        if(!pathTiles.some(t => t.x === tileX && t.y === tileY)) {
-            pathTiles.push({ x: tileX, y: tileY });
-        }
-    }
-}
-
-function generatePaths() {
-    pathTiles = [];
-    drawPathBetween(spawnPoint, dummyPoint);
-    drawPathBetween(dummyPoint, signPoint);
-}
-
-function drawPaths() {
-    for(let tile of pathTiles) {
-        const screenX = tile.x - camera.x;
-        const screenY = tile.y - camera.y;
-        if(screenX + 32 < 0 || screenX > SCREEN_W || screenY + 32 < 0 || screenY > SCREEN_H) continue;
-        
-        if(sprites.dirt.complete) {
-            ctx.drawImage(sprites.dirt, screenX, screenY, 32, 32);
-        } else {
-            ctx.fillStyle = "#8B5A2B";
-            ctx.fillRect(screenX, screenY, 32, 32);
-        }
-    }
-}
 
 // ========== ТАЙЛЫ ==========
 const TILE_SIZE = 32;
@@ -166,8 +115,6 @@ function drawTileFloor() {
             }
         }
     }
-    
-    drawPaths();
 }
 
 // ========== ЛАМПЫ ==========
@@ -1010,7 +957,6 @@ for(let row = 0; row < TILES_HIGH; row++) {
         tileMap[row][col] = { type: 'grass', x: col * TILE_SIZE, y: row * TILE_SIZE };
     }
 }
-generatePaths();
 updateCamera();
 updateHealthUI();
 updateDashUI();
