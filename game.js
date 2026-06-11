@@ -1,4 +1,4 @@
-// ========== ИСПРАВЛЕННАЯ ВЕРСИЯ — БОЛЬШЕ СВЕТА, НЕТ СВЕЧЕНИЯ МАНЕКЕНА, УПРАВЛЕНИЕ ЦФЫВ ==========
+// ========== ИГРА С ТРОПИНКАМИ (dirt.png) ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -36,11 +36,12 @@ const sprites = {
     sans: new Image(), dummy: new Image(), gaster: new Image(), 
     bone: new Image(), sign: new Image(), 
     lamp_on: new Image(), lamp_off: new Image(),
-    grass: new Image(), grass_flower: new Image()
+    grass: new Image(), grass_flower: new Image(),
+    dirt: new Image()  // НОВЫЙ СПРАЙТ ТРОПИНКИ
 };
 
 let loadedCount = 0;
-const totalSprites = 9;
+const totalSprites = 10;
 
 function checkAllSpritesLoaded() { 
     if(++loadedCount === totalSprites) {
@@ -59,6 +60,46 @@ sprites.lamp_on.src = "sprites/lamp_on.png"; sprites.lamp_on.onload = checkAllSp
 sprites.lamp_off.src = "sprites/lamp_off.png"; sprites.lamp_off.onload = checkAllSpritesLoaded;
 sprites.grass.src = "sprites/grass.png"; sprites.grass.onload = checkAllSpritesLoaded;
 sprites.grass_flower.src = "sprites/grass_flower.png"; sprites.grass_flower.onload = checkAllSpritesLoaded;
+sprites.dirt.src = "sprites/dirt.png"; sprites.dirt.onload = checkAllSpritesLoaded;
+
+// ========== КООРДИНАТЫ ДЛЯ ТРОПИНОК ==========
+const spawnPoint = { x: MAP_W/2, y: MAP_H/2 };
+const dummyPoint = { x: MAP_W - 350, y: MAP_H/2 };
+const signPoint = { x: 350, y: 250 };
+
+// Функция рисования линии-тропинки между двумя точками
+function drawPathBetween(p1, p2, tileSize = 32) {
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const distance = Math.hypot(dx, dy);
+    const steps = Math.ceil(distance / tileSize);
+    
+    for(let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = p1.x + dx * t;
+        const y = p1.y + dy * t;
+        
+        // Округляем до ближайшего тайла
+        const tileX = Math.round(x / tileSize) * tileSize;
+        const tileY = Math.round(y / tileSize) * tileSize;
+        
+        // Сохраняем позицию для отрисовки
+        if(!pathTiles.some(t => t.x === tileX && t.y === tileY)) {
+            pathTiles.push({ x: tileX, y: tileY });
+        }
+    }
+}
+
+// Массив тайлов тропинки
+let pathTiles = [];
+
+function generatePaths() {
+    pathTiles = [];
+    // Тропинка от спавна до манекена
+    drawPathBetween(spawnPoint, dummyPoint);
+    // Тропинка от манекена до таблички
+    drawPathBetween(dummyPoint, signPoint);
+}
 
 // ========== ТАЙЛЫ ==========
 const TILE_SIZE = 32;
@@ -81,6 +122,25 @@ function generateTileMap() {
                 type = 'grass_flower';
             }
             tileMap[row][col] = { type, x, y };
+        }
+    }
+    // Генерируем тропинки после создания карты
+    generatePaths();
+}
+
+// Отрисовка тропинок поверх травы
+function drawPaths() {
+    for(let tile of pathTiles) {
+        const screenX = tile.x - camera.x;
+        const screenY = tile.y - camera.y;
+        if(screenX + TILE_SIZE < 0 || screenX > SCREEN_W ||
+           screenY + TILE_SIZE < 0 || screenY > SCREEN_H) continue;
+        
+        if(sprites.dirt.complete) {
+            ctx.drawImage(sprites.dirt, screenX, screenY, TILE_SIZE, TILE_SIZE);
+        } else {
+            ctx.fillStyle = "#8B5A2B";
+            ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
         }
     }
 }
@@ -115,9 +175,12 @@ function drawTileFloor() {
             }
         }
     }
+    
+    // Рисуем тропинки ПОВЕРХ травы
+    drawPaths();
 }
 
-// ========== ЛАМПЫ (РАДИУС УВЕЛИЧЕН) ==========
+// ========== ЛАМПЫ ==========
 let lamps = [
     { x: 350, y: 280, radius: 180, color: [255,220,150], baseIntensity: 0.85, phase: 0, speed: 0.02, active: true },
     { x: 850, y: 450, radius: 170, color: [255,220,150], baseIntensity: 0.8, phase: 1.5, speed: 0.025, active: true },
@@ -874,15 +937,13 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// ========== УПРАВЛЕНИЕ (WASD + ЦФЫВ) ==========
+// ========== УПРАВЛЕНИЕ ==========
 window.addEventListener('keydown', (e) => {
     const k = e.key;
-    // WASD (английская раскладка)
     if(k === 'w' || k === 'W') move.up = true;
     if(k === 's' || k === 'S') move.down = true;
     if(k === 'a' || k === 'A') move.left = true;
     if(k === 'd' || k === 'D') move.right = true;
-    // ЦФЫВ (русская раскладка)
     if(k === 'ц' || k === 'Ц') move.up = true;
     if(k === 'ы' || k === 'Ы') move.down = true;
     if(k === 'ф' || k === 'Ф') move.left = true;
@@ -896,12 +957,10 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('keyup', (e) => {
     const k = e.key;
-    // WASD
     if(k === 'w' || k === 'W') move.up = false;
     if(k === 's' || k === 'S') move.down = false;
     if(k === 'a' || k === 'A') move.left = false;
     if(k === 'd' || k === 'D') move.right = false;
-    // ЦФЫВ
     if(k === 'ц' || k === 'Ц') move.up = false;
     if(k === 'ы' || k === 'Ы') move.down = false;
     if(k === 'ф' || k === 'Ф') move.left = false;
@@ -945,6 +1004,7 @@ for(let row = 0; row < TILES_HIGH; row++) {
         tileMap[row][col] = { type: 'grass', x: col * TILE_SIZE, y: row * TILE_SIZE };
     }
 }
+generatePaths();
 updateCamera();
 updateHealthUI();
 updateDashUI();
@@ -967,8 +1027,8 @@ function render() {
     drawEffects(); 
     for(let p of projectiles) p.draw(); 
     for(let g of activeGasterBlasters) g.draw(); 
-    drawSign();      // Табличка под лампами
-    drawLamps();     // Лампы поверх таблички
+    drawSign();
+    drawLamps();
     drawDummy(); 
     drawSans(); 
     drawDustParticles();
