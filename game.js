@@ -1,4 +1,4 @@
-// ========== ИГРА С ТРОПИНКАМИ И ТРЯСКОЙ МАНЕКЕНА ==========
+// ========== ИГРА С ТРОПИНКАМИ (ВРУЧНУЮ) ==========
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -59,38 +59,42 @@ sprites.grass.src = "sprites/grass.png"; sprites.grass.onload = checkAllSpritesL
 sprites.grass_flower.src = "sprites/grass_flower.png"; sprites.grass_flower.onload = checkAllSpritesLoaded;
 sprites.dirt.src = "sprites/dirt.png"; sprites.dirt.onload = checkAllSpritesLoaded;
 
-// ========== ТРОПИНКИ ==========
-const spawnPoint = { x: MAP_W/2, y: MAP_H/2 };
-const dummyPoint = { x: MAP_W - 350, y: MAP_H/2 };
-const signPoint = { x: 350, y: 250 };
+// ========== ТРОПИНКИ (ВРУЧНУЮ) ==========
 let pathTiles = [];
-
-function drawPathBetween(p1, p2, tileSize = 32) {
-    const dx = p2.x - p1.x, dy = p2.y - p1.y;
-    const distance = Math.hypot(dx, dy);
-    const steps = Math.ceil(distance / tileSize);
-    for(let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const x = p1.x + dx * t, y = p1.y + dy * t;
-        const tileX = Math.round(x / tileSize) * tileSize;
-        const tileY = Math.round(y / tileSize) * tileSize;
-        if(!pathTiles.some(t => t.x === tileX && t.y === tileY)) {
-            pathTiles.push({ x: tileX, y: tileY });
-        }
-    }
-}
 
 function generatePaths() {
     pathTiles = [];
-    drawPathBetween(spawnPoint, dummyPoint);
-    drawPathBetween(dummyPoint, signPoint);
+    
+    // ТРОПИНКА 1: от спавна (1500, 1250) до манекена (2650, 1250)
+    for(let x = 1500; x <= 2650; x += 32) {
+        pathTiles.push({ x: x, y: 1250 });
+    }
+    
+    // ТРОПИНКА 2: от манекена (2650, 1250) до таблички (350, 250)
+    for(let x = 350; x <= 2650; x += 32) {
+        pathTiles.push({ x: x, y: 1250 });
+    }
+    for(let y = 250; y <= 1250; y += 32) {
+        pathTiles.push({ x: 350, y: y });
+    }
+    
+    // Убираем дубликаты
+    const unique = [];
+    for(let tile of pathTiles) {
+        if(!unique.some(t => t.x === tile.x && t.y === tile.y)) {
+            unique.push(tile);
+        }
+    }
+    pathTiles = unique;
 }
 
 function drawPaths() {
     for(let tile of pathTiles) {
-        const sx = tile.x - camera.x, sy = tile.y - camera.y;
+        const sx = tile.x - camera.x;
+        const sy = tile.y - camera.y;
         if(sx + 32 < 0 || sx > SCREEN_W || sy + 32 < 0 || sy > SCREEN_H) continue;
-        if(sprites.dirt.complete && sprites.dirt.naturalWidth > 0) {
+        
+        if(sprites.dirt && sprites.dirt.complete && sprites.dirt.naturalWidth > 0) {
             ctx.drawImage(sprites.dirt, sx, sy, 32, 32);
         } else {
             ctx.fillStyle = "#8B5A2B";
