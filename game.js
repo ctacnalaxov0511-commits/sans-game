@@ -102,7 +102,7 @@ function drawTrees() {
             ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
         }
         
-        // Верхняя часть дерева (исходный цвет, без затемнения)
+        // Верхняя часть дерева (исходный цвет)
         if(sprites.fir2 && sprites.fir2.complete) {
             ctx.drawImage(sprites.fir2, sx - 24, sy - 96, 80, 96);
         }
@@ -648,7 +648,7 @@ function drawSans() {
         }
         ctx.globalAlpha = 1;
     }
-    if(sprites.sans.complete) { ctx.translate(sx, sy); ctx.rotate(player.angle + Math.PI/2); ctx.drawImage(sprites.sans, -26, -26, 52, Banay); }
+    if(sprites.sans.complete) { ctx.translate(sx, sy); ctx.rotate(player.angle + Math.PI/2); ctx.drawImage(sprites.sans, -26, -26, 52, 52); }
     ctx.restore();
     if(player.invincible > 0 && (Math.floor(Date.now() / 50) % 4 < 2)) { ctx.beginPath(); ctx.arc(sx, sy-2, 30, 0, Math.PI*2); ctx.strokeStyle = "#ffecb3"; ctx.lineWidth = 2.5; ctx.stroke(); }
     const ex = Math.cos(player.angle)*26, ey = Math.sin(player.angle)*26;
