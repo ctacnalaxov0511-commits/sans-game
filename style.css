@@ -28,7 +28,19 @@ canvas {
     z-index: 1;
 }
 
-/* ========== ВЕРСИЯ ========== */
+/* ========== ТОЛЬКО ДЛЯ ПК ========== */
+.pc-only {
+    display: block;
+}
+
+/* ========== ТОЛЬКО ДЛЯ ТЕЛЕФОНОВ ========== */
+@media (max-width: 768px) {
+    .pc-only {
+        display: none !important;
+    }
+}
+
+/* ========== ВЕРСИЯ (ПК) ========== */
 .version-info {
     position: fixed;
     bottom: 15px;
@@ -44,7 +56,7 @@ canvas {
     pointer-events: none;
 }
 
-/* ========== HUD ========== */
+/* ========== HUD (ПК) ========== */
 .hud {
     position: fixed;
     top: 20px;
@@ -115,7 +127,7 @@ canvas {
     gap: 8px;
 }
 
-/* ========== МЕНЮ ========== */
+/* ========== КНОПКИ ОБЩИЕ ========== */
 .menu-button {
     position: fixed;
     right: 20px;
@@ -297,15 +309,6 @@ canvas {
 
 /* ========== АДАПТАЦИЯ ДЛЯ ТЕЛЕФОНОВ ========== */
 @media (max-width: 768px) {
-    .hud { top: 10px; left: 10px; right: 10px; gap: 8px; }
-    .health-bar { padding: 4px 12px; font-size: 14px; }
-    .ability-hud { padding: 3px 10px; font-size: 10px; gap: 4px; }
-    .ability-hud .key { font-size: 10px; padding: 1px 4px; }
-    .dash-hud { padding: 4px 12px; font-size: 11px; }
-    .menu-button { width: 40px; height: 40px; font-size: 22px; right: 15px; }
-    .fullscreen-btn { bottom: 15px; right: 15px; padding: 8px 12px; font-size: 14px; }
-    .version-info { font-size: 9px; bottom: 10px; left: 10px; }
-    
     .joystick-container { width: 100px; height: 100px; }
     .joystick-thumb { width: 40px; height: 40px; }
     .action-btn { width: 60px; height: 60px; font-size: 20px; }
@@ -316,5 +319,4 @@ canvas {
     .joystick-container { width: 80px; height: 80px; }
     .joystick-thumb { width: 32px; height: 32px; }
     .action-btn { width: 55px; height: 55px; font-size: 18px; }
-    .abilities-hud { gap: 6px; padding: 4px 10px; }
 }
