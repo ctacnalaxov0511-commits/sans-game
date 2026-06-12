@@ -24,7 +24,7 @@ let cursorWorld = { x: 0, y: 0 };
 
 // Переменные для анимации деревьев
 let lastAnimUpdate = 0;
-const ANIM_SPEED = 200; // 200 мс между кадрами
+const ANIM_SPEED = 400; // 200 мс между кадрами
 
 function updateCamera() {
     camera.x = Math.min(Math.max(player.x - SCREEN_W / 2, 0), MAP_W - SCREEN_W);
@@ -142,7 +142,7 @@ function drawPaths() {
     }
 }
 
-// ========== ДЕРЕВЬЯ С АНИМАЦИЕЙ ==========
+// ========== ДЕРЕВЬЯ (ЦЕЛЬНЫЕ, АНИМИРОВАННЫЕ) ==========
 let trees = [];
 let treeCollision = [];
 
@@ -214,15 +214,11 @@ function checkTreeCollision(newX, newY) {
 function drawTrees() {
     for(let tree of trees) {
         const sx = tree.x - camera.x, sy = tree.y - camera.y;
-        if(sx + 64 < -50 || sx > SCREEN_W + 50 || sy + 128 < -50 || sy > SCREEN_H + 50) continue;
+        if(sx + 64 < -50 || sx > SCREEN_W + 50 || sy + 64 < -50 || sy > SCREEN_H + 50) continue;
         
-        if(sprites.fir && sprites.fir.complete) {
-            ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
-        }
-        
-        if(sprites.fir2 && sprites.fir2.complete) {
-            const currentSprite = tree.frame === 0 ? sprites.fir : sprites.fir2;
-            ctx.drawImage(currentSprite, sx - 24, sy - 96, 80, 96);
+        const currentSprite = tree.frame === 0 ? sprites.fir : sprites.fir2;
+        if(currentSprite && currentSprite.complete) {
+            ctx.drawImage(currentSprite, sx - 32, sy - 64, 64, 64);
         }
     }
 }
