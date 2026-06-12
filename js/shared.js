@@ -400,6 +400,8 @@ class BoneProjectile {
 }
 
 // ========== ГАСТЕР БЛАСТЕР (БАЗОВЫЙ) ==========
+let activeGasterBlasters = [];
+
 class GasterBlaster {
     constructor(x, y, tx, ty) {
         this.x = x; this.y = y;
@@ -463,14 +465,11 @@ class GasterBlaster {
     }
 }
 
-// ========== ФЕЙЕРВЕРКИ И ЧАСТИЦЫ (ТОЛЬКО ДЛЯ ПК) ==========
-let fireworkEnabled = false; // будет включено в pc.js
+// ========== ФЕЙЕРВЕРКИ И ЧАСТИЦЫ ==========
 
 const fireworkTypes = ['burst', 'ring', 'star', 'double', 'chaos'];
 
 function createFireworkExplosion(x, y, type = 'burst') {
-    if(!fireworkEnabled) return;
-    
     const colors = [
         "rgba(255,50,50,1)", "rgba(255,200,50,1)", "rgba(50,150,255,1)",
         "rgba(255,100,255,1)", "rgba(100,255,100,1)", "rgba(255,150,50,1)"
@@ -606,10 +605,8 @@ function castGasterBlaster() {
     spawnX = Math.min(Math.max(spawnX, 80), MAP_W - 80);
     spawnY = Math.min(Math.max(spawnY, 80), MAP_H - 80);
     
-    // ФЕЙЕРВЕРК ПРИ ВЫСТРЕЛЕ (только для ПК)
-    if(fireworkEnabled) {
-        createFireworkExplosion(spawnX, spawnY, 'star');
-    }
+    // ФЕЙЕРВЕРК ПРИ ВЫСТРЕЛЕ
+    createFireworkExplosion(spawnX, spawnY, 'star');
     
     activeGasterBlasters.push(new GasterBlaster(spawnX, spawnY, targetX, targetY));
     addFloatingText("💀 GASTER BLASTER 💀", spawnX-40, spawnY-30, "#ffaa77", true);
@@ -664,11 +661,9 @@ function handleCollisions() {
             addLightSource(dummyObj.x, dummyObj.y, 60, [255,160,90], 0.45);
             dummyShake = 10;
             
-            // ФЕЙЕРВЕРК ПРИ ПОПАДАНИИ (только для ПК)
-            if(fireworkEnabled) {
-                const fireworkType = fireworkTypes[Math.floor(Math.random() * fireworkTypes.length)];
-                createFireworkExplosion(dummyObj.x, dummyObj.y, fireworkType);
-            }
+            // ФЕЙЕРВЕРК ПРИ ПОПАДАНИИ
+            const fireworkType = fireworkTypes[Math.floor(Math.random() * fireworkTypes.length)];
+            createFireworkExplosion(dummyObj.x, dummyObj.y, fireworkType);
             
             projectiles.splice(i,1);
         }
