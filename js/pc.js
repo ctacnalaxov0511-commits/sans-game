@@ -1,9 +1,6 @@
 // ========== pc.js — ПК УПРАВЛЕНИЕ ==========
 // GitTale v0.0.8
 
-// ВКЛЮЧАЕМ ФЕЙЕРВЕРКИ ДЛЯ ПК ВЕРСИИ
-fireworkEnabled = true;
-
 let mouseInCanvas = false;
 
 function updateCursor(clientX, clientY) {
@@ -14,6 +11,14 @@ function updateCursor(clientX, clientY) {
     cursorWorld.y = Math.min(Math.max(sy + camera.y, 0), MAP_H);
     player.angle = Math.atan2(cursorWorld.y - player.y, cursorWorld.x - player.x);
 }
+
+// ВКЛЮЧАЕМ ФЕЙЕРВЕРКИ ДЛЯ ПК ВЕРСИИ (после того как shared.js загрузился)
+setTimeout(() => {
+    if(typeof fireworkEnabled !== 'undefined') {
+        fireworkEnabled = true;
+        console.log("Фейерверки включены для ПК версии");
+    }
+}, 100);
 
 // ========== КЛАВИАТУРА ==========
 window.addEventListener('keydown', (e) => {
@@ -202,5 +207,9 @@ function initPlatform() {
     updateHealthUI();
     updateDashUI();
     updateCooldownUI();
+    // Включаем фейерверки после полной загрузки
+    if(typeof fireworkEnabled !== 'undefined') {
+        fireworkEnabled = true;
+    }
     console.log("ПК версия загружена (с фейерверками)");
 }
