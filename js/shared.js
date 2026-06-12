@@ -1,5 +1,5 @@
 // ========== shared.js — ОБЩАЯ ЛОГИКА ==========
-// GitTale v0.0.8
+// GitTale v0.0.9
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -26,6 +26,14 @@ let cursorWorld = { x: 0, y: 0 };
 let lastAnimUpdate = 0;
 const ANIM_SPEED = 400; // 400 мс между кадрами
 
+// Переменные для анимации атаки Санса
+let attackAnimTimer = 0;
+const ATTACK_ANIM_DURATION = 30; // 0.5 секунды при 60fps
+
+function startAttackAnimation() {
+    attackAnimTimer = ATTACK_ANIM_DURATION;
+}
+
 function updateCamera() {
     camera.x = Math.min(Math.max(player.x - SCREEN_W / 2, 0), MAP_W - SCREEN_W);
     camera.y = Math.min(Math.max(player.y - SCREEN_H / 2, 0), MAP_H - SCREEN_H);
@@ -39,15 +47,23 @@ function isOnScreen(wx, wy, margin = 100) {
 
 // ========== ЗАГРУЗКА СПРАЙТОВ ==========
 const sprites = {
-    sans: new Image(), dummy: new Image(), gaster: new Image(), 
-    bone: new Image(), sign: new Image(), 
-    lamp_on: new Image(), lamp_off: new Image(),
-    grass: new Image(), grass_flower: new Image(),
-    dirt: new Image(), fir: new Image(), fir2: new Image()
+    sans: new Image(), 
+    sans_attack: new Image(),
+    dummy: new Image(), 
+    gaster: new Image(), 
+    bone: new Image(), 
+    sign: new Image(), 
+    lamp_on: new Image(), 
+    lamp_off: new Image(),
+    grass: new Image(), 
+    grass_flower: new Image(),
+    dirt: new Image(), 
+    fir: new Image(), 
+    fir2: new Image()
 };
 
 let loadedCount = 0;
-const totalSprites = 12;
+const totalSprites = 13;
 
 function checkAllSpritesLoaded() { 
     if(++loadedCount === totalSprites) {
@@ -61,6 +77,7 @@ function checkAllSpritesLoaded() {
 }
 
 sprites.sans.src = "sprites/sans.png"; sprites.sans.onload = checkAllSpritesLoaded;
+sprites.sans_attack.src = "sprites/sans_attack.png"; sprites.sans_attack.onload = checkAllSpritesLoaded;
 sprites.dummy.src = "sprites/maket.png"; sprites.dummy.onload = checkAllSpritesLoaded;
 sprites.gaster.src = "sprites/gaster_blaster.png"; sprites.gaster.onload = checkAllSpritesLoaded;
 sprites.bone.src = "sprites/bone.png"; sprites.bone.onload = checkAllSpritesLoaded;
@@ -578,6 +595,7 @@ function castBoneShot() {
     const a = player.angle;
     projectiles.push(new BoneProjectile(player.x + Math.cos(a)*20, player.y + Math.sin(a)*20, a, 10, 1));
     addLightSource(player.x, player.y, 50, [255,200,120], 0.35);
+    startAttackAnimation();
     if(typeof updateCooldownUI === 'function') updateCooldownUI();
 }
 
@@ -605,7 +623,6 @@ function castGasterBlaster() {
     spawnX = Math.min(Math.max(spawnX, 80), MAP_W - 80);
     spawnY = Math.min(Math.max(spawnY, 80), MAP_H - 80);
     
-    // ФЕЙЕРВЕРК ПРИ ВЫСТРЕЛЕ
     createFireworkExplosion(spawnX, spawnY, 'star');
     
     activeGasterBlasters.push(new GasterBlaster(spawnX, spawnY, targetX, targetY));
@@ -620,6 +637,7 @@ function castBoneVolley() {
         return;
     }
     cooldowns.skill3 = 100;
+    startAttackAnimation();
     const baseAngle = player.angle;
     if(volleyTimer) clearTimeout(volleyTimer);
     for(let w = 0; w < 3; w++) {
@@ -661,7 +679,6 @@ function handleCollisions() {
             addLightSource(dummyObj.x, dummyObj.y, 60, [255,160,90], 0.45);
             dummyShake = 10;
             
-            // ФЕЙЕРВЕРК ПРИ ПОПАДАНИИ
             const fireworkType = fireworkTypes[Math.floor(Math.random() * fireworkTypes.length)];
             createFireworkExplosion(dummyObj.x, dummyObj.y, fireworkType);
             
@@ -786,9 +803,19 @@ function drawSans() {
         }
         ctx.globalAlpha = 1;
     }
-    if(sprites.sans.complete) { ctx.translate(sx, sy); ctx.rotate(player.angle + Math.PI/2); ctx.drawImage(sprites.sans, -26, -26, 52, 52); }
+    
+    // ВЫБОР СПРАЙТА: если анимация атаки активна — используем sans_attack
+    const currentSprite = (attackAnimTimer > 0 && sprites.sans_attack.complete) ? sprites.sans_attack : sprites.sans;
+    if(currentSprite && currentSprite.complete) { 
+        ctx.translate(sx, sy); 
+        ctx.rotate(player.angle + Math.PI/2); 
+        ctx.drawImage(currentSprite, -26, -26, 52, 52); 
+    }
     ctx.restore();
-    if(player.invincible > 0 && (Math.floor(Date.now() / 50) % 4 < 2)) { ctx.beginPath(); ctx.arc(sx, sy-2, 30, 0, Math.PI*2); ctx.strokeStyle = "#ffecb3"; ctx.lineWidth = 2.5; ctx.stroke(); }
+    if(player.invincible > 0 && (Math.floor(Date.now() / 50) % 4 < 2)) { 
+        ctx.beginPath(); ctx.arc(sx, sy-2, 30, 0, Math.PI*2); 
+        ctx.strokeStyle = "#ffecb3"; ctx.lineWidth = 2.5; ctx.stroke(); 
+    }
     const ex = Math.cos(player.angle)*26, ey = Math.sin(player.angle)*26;
     ctx.beginPath(); ctx.moveTo(sx+ex, sy-4+ey); ctx.lineTo(sx+ex-5, sy-4+ey-5); ctx.lineTo(sx+ex+5, sy-4+ey-5);
     ctx.fillStyle = "#ffcc88aa"; ctx.fill();
@@ -827,6 +854,11 @@ function gameUpdate(currentTime) {
     updateLightSources();
     updateLampGradients();
     updateTreeAnimation(currentTime);
+    
+    // Обновление анимации атаки Санса
+    if(attackAnimTimer > 0) {
+        attackAnimTimer--;
+    }
 }
 
 function render() { 
