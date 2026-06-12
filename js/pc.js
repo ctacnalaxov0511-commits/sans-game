@@ -32,6 +32,15 @@ window.addEventListener('keydown', (e) => {
     if(k === '2') { e.preventDefault(); castGasterBlaster(); }
     if(k === '3') { e.preventDefault(); castBoneVolley(); }
     if(k === 'r' || k === 'R') { resetGame(); addFloatingText("❤️ ЗДОРОВЬЕ ВОССТАНОВЛЕНО", player.x-80, player.y-40, "#aaffaa", true); }
+    
+    // ОТЛАДОЧНАЯ ФУНКЦИЯ: отнимаем 1 HP при нажатии G или П
+    if(k === 'g' || k === 'G' || k === 'п' || k === 'П') { 
+        e.preventDefault(); 
+        player.hp = Math.max(0, player.hp - 1); 
+        updateHealthUI(); 
+        addFloatingText("-1 HP", player.x, player.y-30, "#ff8888", true); 
+        player.invincible = 15;
+    }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -199,5 +208,5 @@ function initPlatform() {
     updateHealthUI();
     updateDashUI();
     updateCooldownUI();
-    console.log("ПК версия загружена (плавное движение)");
+    console.log("ПК версия загружена (плавное движение, отладка: G/П - минус 1 HP)");
 }
