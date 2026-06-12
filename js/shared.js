@@ -142,7 +142,7 @@ function drawPaths() {
     }
 }
 
-// ========== ДЕРЕВЬЯ (ВИД СВЕРХУ, НАД ИГРОКОМ) ==========
+// ========== ДЕРЕВЬЯ (ВИД СВЕРХУ, БОЛЬШАЯ КРОНА, МАЛЕНЬКИЙ СТВОЛ) ==========
 let trees = [];
 let treeCollision = [];
 
@@ -150,21 +150,21 @@ function generateTrees() {
     trees = [];
     treeCollision = [];
     
-    function isTooCloseToPath(x, y, margin = 45) {
+    function isTooCloseToPath(x, y, margin = 50) {
         for(let tile of pathTiles) {
             if(Math.abs(x - tile.x) < margin && Math.abs(y - tile.y) < margin) return true;
         }
         return false;
     }
     
-    function isTooCloseToOtherTrees(x, y, margin = 70) {
+    function isTooCloseToOtherTrees(x, y, margin = 90) {
         for(let tree of trees) {
             if(Math.abs(x - tree.x) < margin && Math.abs(y - tree.y) < margin) return true;
         }
         return false;
     }
     
-    const treeCount = 80;
+    const treeCount = 60;
     
     for(let i = 0; i < treeCount; i++) {
         let attempts = 0;
@@ -174,21 +174,25 @@ function generateTrees() {
             const x = 60 + Math.random() * (MAP_W - 120);
             const y = 60 + Math.random() * (MAP_H - 120);
             
-            if(!isTooCloseToPath(x, y, 45) && !isTooCloseToOtherTrees(x, y, 65)) {
+            if(!isTooCloseToPath(x, y, 50) && !isTooCloseToOtherTrees(x, y, 90)) {
                 const distToDummy = Math.hypot(x - dummyObj.x, y - dummyObj.y);
                 const distToSign = Math.hypot(x - sign.x, y - sign.y);
                 const distToSpawn = Math.hypot(x - MAP_W/2, y - MAP_H/2);
-                const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 90);
+                const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 100);
                 
-                if(distToDummy > 100 && distToSign > 100 && distToSpawn > 100 && !distToLamp) {
-                    const radius = 24 + Math.random() * 20;
+                if(distToDummy > 120 && distToSign > 120 && distToSpawn > 120 && !distToLamp) {
+                    // РАЗМЕР КРОНЫ (большая, радиус 35-55)
+                    const crownRadius = 35 + Math.random() * 25;
+                    // СТВОЛ (коллизия) в 2.5 раза меньше кроны
+                    const trunkRadius = crownRadius / 2.5;
+                    
                     trees.push({ 
                         x, y, 
                         frame: Math.random() < 0.5 ? 0 : 1,
-                        radius: radius,
-                        size: radius * 2
+                        crownRadius: crownRadius,
+                        trunkRadius: trunkRadius
                     });
-                    treeCollision.push({ x, y, radius: radius - 4 });
+                    treeCollision.push({ x, y, radius: trunkRadius });
                     placed = true;
                 }
             }
@@ -220,7 +224,7 @@ function checkTreeCollision(newX, newY) {
 function drawTrees() {
     for(let tree of trees) {
         const sx = tree.x - camera.x, sy = tree.y - camera.y;
-        const radius = tree.radius;
+        const radius = tree.crownRadius;
         const diameter = radius * 2;
         
         if(sx + radius < -50 || sx - radius > SCREEN_W + 50 || 
@@ -230,15 +234,25 @@ function drawTrees() {
         if(currentSprite && currentSprite.complete) {
             ctx.drawImage(currentSprite, sx - radius, sy - radius, diameter, diameter);
         } else {
+            // Запасной вариант — зелёный круг
             ctx.beginPath();
             ctx.arc(sx, sy, radius, 0, Math.PI * 2);
             ctx.fillStyle = "#2d5a2d";
             ctx.fill();
-            ctx.fillStyle = "#3a7a3a";
+            ctx.fillStyle = "#4a8a4a";
             ctx.beginPath();
             ctx.arc(sx - 3, sy - 3, radius * 0.6, 0, Math.PI * 2);
             ctx.fill();
         }
+        
+        // ОТЛАДКА: показать хитбокс ствола (раскомментировать для проверки)
+        /*
+        ctx.beginPath();
+        ctx.arc(sx, sy, tree.trunkRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        */
     }
 }
 
@@ -734,8 +748,8 @@ function render() {
     drawSign(); 
     drawLamps(); 
     drawDummy(); 
-    drawTrees();       // ДЕРЕВЬЯ ПОД ИГРОКОМ (вид сверху)
-    drawSans();        // ИГРОК ПОВЕРХ ДЕРЕВЬЕВ
+    drawTrees();       // ДЕРЕВЬЯ ПОД ИГРОКОМ
+    drawSans();        // ИГРОК ПОВЕРХ
     drawDustParticles();
     drawDynamicLighting();
 }
