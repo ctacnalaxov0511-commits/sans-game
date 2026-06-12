@@ -1,5 +1,5 @@
 // ========== shared.js — ОБЩАЯ ЛОГИКА ==========
-// GitTale v0.1.1
+// GitTale v0.1.2
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -43,6 +43,10 @@ let maxSpeed = 6.2;           // Максимальная скорость
 // Переменные для смерти и респавна
 let deathMessageTimer = 0;
 let isDead = false;
+
+// Качество освещения
+let lightingQuality = 'medium'; // 'low', 'medium', 'high'
+let lastLampUpdate = 0;
 
 function startAttackAnimation() {
     attackAnimTimer = ATTACK_ANIM_DURATION;
@@ -331,8 +335,25 @@ let lamps = [
     { x: 2700, y: 2100, radius: 180, color: [255,220,150], baseIntensity: 0.85, phase: 4.5, speed: 0.018, active: true },
 ];
 let lampTime = 0;
+let lampGradients = [];
 
-function updateLampGradients() { lampTime += 0.016; }
+function updateLampGradients() { 
+    lampTime += 0.016;
+    for(let i = 0; i < lamps.length; i++) {
+        const lamp = lamps[i];
+        if(!lamp.active) {
+            lampGradients[i] = null;
+            continue;
+        }
+        const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
+        const intensity = lamp.baseIntensity * flicker;
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, lamp.radius);
+        grad.addColorStop(0, `rgba(255, 220, 150, ${intensity * 0.8})`);
+        grad.addColorStop(0.5, `rgba(255, 200, 100, ${intensity * 0.3})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        lampGradients[i] = grad;
+    }
+}
 
 function checkLampClick(wx, wy) {
     for(let lamp of lamps) {
@@ -340,6 +361,7 @@ function checkLampClick(wx, wy) {
         if(dx*dx + dy*dy < 900) {
             lamp.active = !lamp.active;
             addFloatingText(lamp.active ? "💡 ЛАМПА ВКЛЮЧЕНА" : "💡 ЛАМПА ВЫКЛЮЧЕНА", lamp.x, lamp.y-40, lamp.active ? "#aaffaa" : "#ffaa66", true);
+            updateLampGradients();
             break;
         }
     }
@@ -361,23 +383,79 @@ function updateLightSources() {
     }
 }
 
+// ========== ОПТИМИЗИРОВАННОЕ ОСВЕЩЕНИЕ ==========
 function drawDynamicLighting() {
-    ctx.fillStyle = `rgba(0, 0, 0, ${ambientDarkness})`;
-    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    ctx.globalCompositeOperation = 'lighter';
-    for(let lamp of lamps) {
-        if(lamp.active) {
-            const sx = lamp.x - camera.x, sy = lamp.y - 15 - camera.y;
-            const radGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, lamp.radius);
-            const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
-            const intensity = lamp.baseIntensity * flicker;
-            radGrad.addColorStop(0, `rgba(255, 220, 150, ${intensity * 0.8})`);
-            radGrad.addColorStop(0.5, `rgba(255, 200, 100, ${intensity * 0.3})`);
-            radGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = radGrad;
+    // Если освещение выключено через админ-панель
+    if(typeof lightingEnabled !== 'undefined' && !lightingEnabled) {
+        if(window.vignetteGrad) {
+            ctx.fillStyle = window.vignetteGrad;
             ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
         }
+        return;
     }
+    
+    const now = Date.now();
+    
+    // Упрощённое затемнение (только ambient + виньетка)
+    if(lightingQuality === 'low') {
+        ctx.fillStyle = `rgba(0, 0, 0, ${ambientDarkness + 0.1})`;
+        ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+        if(window.vignetteGrad) {
+            ctx.fillStyle = window.vignetteGrad;
+            ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+        }
+        return;
+    }
+    
+    // Обычное освещение
+    ctx.fillStyle = `rgba(0, 0, 0, ${ambientDarkness})`;
+    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+    
+    // Проверяем, есть ли активные источники света
+    let hasActiveLamps = lamps.some(l => l.active);
+    if(!hasActiveLamps && lightSources.length === 0) {
+        if(window.vignetteGrad) {
+            ctx.fillStyle = window.vignetteGrad;
+            ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+        }
+        return;
+    }
+    
+    ctx.globalCompositeOperation = 'lighter';
+    
+    // Свет от ламп (обновляем реже для производительности)
+    if(lightingQuality === 'high' || (now - lastLampUpdate > 100)) {
+        lastLampUpdate = now;
+        for(let i = 0; i < lamps.length; i++) {
+            const lamp = lamps[i];
+            if(lamp.active) {
+                const sx = lamp.x - camera.x, sy = lamp.y - 15 - camera.y;
+                const radGrad = ctx.createRadialGradient(sx, sy, 0, sx, sy, lamp.radius);
+                const flicker = 0.85 + Math.sin(lampTime * lamp.speed + lamp.phase) * 0.12;
+                const intensity = lamp.baseIntensity * flicker;
+                radGrad.addColorStop(0, `rgba(255, 220, 150, ${intensity * 0.8})`);
+                radGrad.addColorStop(0.5, `rgba(255, 200, 100, ${intensity * 0.3})`);
+                radGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = radGrad;
+                ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
+            }
+        }
+    } else {
+        // Используем кэшированные градиенты
+        for(let i = 0; i < lamps.length; i++) {
+            const lamp = lamps[i];
+            if(lamp.active && lampGradients[i]) {
+                const sx = lamp.x - camera.x, sy = lamp.y - 15 - camera.y;
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.fillStyle = lampGradients[i];
+                ctx.fillRect(-sx, -sy, SCREEN_W, SCREEN_H);
+                ctx.restore();
+            }
+        }
+    }
+    
+    // Динамические источники света
     for(let src of lightSources) {
         const sx = src.x - camera.x, sy = src.y - camera.y;
         const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, src.radius);
@@ -387,15 +465,13 @@ function drawDynamicLighting() {
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
     }
+    
     ctx.globalCompositeOperation = 'source-over';
-    if(!window.vignetteGrad) {
-        window.vignetteGrad = ctx.createRadialGradient(SCREEN_W/2, SCREEN_H/2, 300, SCREEN_W/2, SCREEN_H/2, 550);
-        window.vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        window.vignetteGrad.addColorStop(0.7, 'rgba(0,0,0,0.1)');
-        window.vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.35)');
+    
+    if(window.vignetteGrad) {
+        ctx.fillStyle = window.vignetteGrad;
+        ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
     }
-    ctx.fillStyle = window.vignetteGrad;
-    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
 }
 
 // ========== ЧАСТИЦЫ ПЫЛИ ==========
@@ -964,5 +1040,6 @@ function loop(currentTime) {
 
 window.addEventListener('load', () => {
     resetGame();
+    updateLampGradients();
     loop(0);
 });
