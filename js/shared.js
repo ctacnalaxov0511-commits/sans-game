@@ -24,7 +24,7 @@ let cursorWorld = { x: 0, y: 0 };
 
 // Переменные для анимации деревьев
 let lastAnimUpdate = 0;
-const ANIM_SPEED = 200; // 200 мс между кадрами
+const ANIM_SPEED = 400; // 400 мс между кадрами
 
 function updateCamera() {
     camera.x = Math.min(Math.max(player.x - SCREEN_W / 2, 0), MAP_W - SCREEN_W);
@@ -181,9 +181,7 @@ function generateTrees() {
                 const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 100);
                 
                 if(distToDummy > 120 && distToSign > 120 && distToSpawn > 120 && !distToLamp) {
-                    // РАЗМЕР КРОНЫ (большая, радиус 35-55)
                     const crownRadius = 35 + Math.random() * 25;
-                    // СТВОЛ (коллизия) в 2.5 раза меньше кроны
                     const trunkRadius = crownRadius / 2.5;
                     
                     trees.push({ 
@@ -234,7 +232,6 @@ function drawTrees() {
         if(currentSprite && currentSprite.complete) {
             ctx.drawImage(currentSprite, sx - radius, sy - radius, diameter, diameter);
         } else {
-            // Запасной вариант — зелёный круг
             ctx.beginPath();
             ctx.arc(sx, sy, radius, 0, Math.PI * 2);
             ctx.fillStyle = "#2d5a2d";
@@ -244,15 +241,6 @@ function drawTrees() {
             ctx.arc(sx - 3, sy - 3, radius * 0.6, 0, Math.PI * 2);
             ctx.fill();
         }
-        
-        // ОТЛАДКА: показать хитбокс ствола (раскомментировать для проверки)
-        /*
-        ctx.beginPath();
-        ctx.arc(sx, sy, tree.trunkRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        */
     }
 }
 
@@ -748,8 +736,8 @@ function render() {
     drawSign(); 
     drawLamps(); 
     drawDummy(); 
-    drawTrees();       // ДЕРЕВЬЯ ПОД ИГРОКОМ
-    drawSans();        // ИГРОК ПОВЕРХ
+    drawSans();        // СНАЧАЛА ИГРОК
+    drawTrees();       // ПОТОМ ДЕРЕВЬЯ ПОВЕРХ ИГРОКА
     drawDustParticles();
     drawDynamicLighting();
 }
