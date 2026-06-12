@@ -12,14 +12,6 @@ function updateCursor(clientX, clientY) {
     player.angle = Math.atan2(cursorWorld.y - player.y, cursorWorld.x - player.x);
 }
 
-// ВКЛЮЧАЕМ ФЕЙЕРВЕРКИ ДЛЯ ПК ВЕРСИИ (после того как shared.js загрузился)
-setTimeout(() => {
-    if(typeof fireworkEnabled !== 'undefined') {
-        fireworkEnabled = true;
-        console.log("Фейерверки включены для ПК версии");
-    }
-}, 100);
-
 // ========== КЛАВИАТУРА ==========
 window.addEventListener('keydown', (e) => {
     if(gamePaused) return;
@@ -207,9 +199,7 @@ function initPlatform() {
     updateHealthUI();
     updateDashUI();
     updateCooldownUI();
-    // Включаем фейерверки после полной загрузки
-    if(typeof fireworkEnabled !== 'undefined') {
-        fireworkEnabled = true;
-    }
-    console.log("ПК версия загружена (с фейерверками)");
+    // ВКЛЮЧАЕМ ФЕЙЕРВЕРКИ ДЛЯ ПК
+    fireworkEnabled = true;
+    console.log("ПК версия загружена (фейерверки ВКЛЮЧЕНЫ)");
 }
