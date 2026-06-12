@@ -1,5 +1,5 @@
 // ========== shared.js — ОБЩАЯ ЛОГИКА ==========
-// GitTale v0.0.9
+// GitTale v0.1.0
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -29,6 +29,13 @@ const ANIM_SPEED = 400; // 400 мс между кадрами
 // Переменные для анимации атаки Санса
 let attackAnimTimer = 0;
 const ATTACK_ANIM_DURATION = 30; // 0.5 секунды при 60fps
+
+// Переменные для плавного движения
+let moveInput = { up: false, down: false, left: false, right: false };
+let velocity = { x: 0, y: 0 };
+let acceleration = 0.45;      // Ускорение при нажатии
+let friction = 0.93;          // Трение при отпускании
+let maxSpeed = 6.2;           // Максимальная скорость
 
 function startAttackAnimation() {
     attackAnimTimer = ATTACK_ANIM_DURATION;
@@ -159,7 +166,7 @@ function drawPaths() {
     }
 }
 
-// ========== ДЕРЕВЬЯ (ВИД СВЕРХУ, БОЛЬШАЯ КРОНА, МАЛЕНЬКИЙ СТВОЛ) ==========
+// ========== ДЕРЕВЬЯ ==========
 let trees = [];
 let treeCollision = [];
 
@@ -368,11 +375,9 @@ function drawDustParticles() {
 
 // ========== ИГРОК ==========
 let player = { x: MAP_W/2, y: MAP_H/2, radius: 22, hp: 24, maxHp: 24, invincible: 0, angle: 0 };
-let move = { up: false, down: false, left: false, right: false };
-let baseSpeed = 5.2;
 let dash = { active: false, duration: 0, cooldown: 0, speedBoost: 16.5, trailPositions: [], afterImages: [], canDash: true };
 
-// ========== МАНЕКЕН С ТРЯСКОЙ (БЕЗ СВЕЧЕНИЯ) ==========
+// ========== МАНЕКЕН ==========
 const dummyObj = { x: MAP_W - 350, y: MAP_H/2, radius: 35 };
 let dummyShake = 0;
 function isHitDummy(x, y, rad) { const dx = x - dummyObj.x, dy = y - dummyObj.y; return dx*dx + dy*dy < (dummyObj.radius + rad) ** 2; }
@@ -386,7 +391,6 @@ function doesLaserHitDummy(sx, sy, angle, length) {
     return ddx*ddx + ddy*ddy < (dummyObj.radius + 15) ** 2;
 }
 
-// ========== ТАБЛИЧКА ==========
 const sign = { x: 350, y: 250 };
 
 let stats = { hits: 0, totalDamage: 0, gasterCount: 0 };
@@ -416,7 +420,7 @@ class BoneProjectile {
     }
 }
 
-// ========== ГАСТЕР БЛАСТЕР (БАЗОВЫЙ) ==========
+// ========== ГАСТЕР БЛАСТЕР ==========
 let activeGasterBlasters = [];
 
 class GasterBlaster {
@@ -482,15 +486,12 @@ class GasterBlaster {
     }
 }
 
-// ========== ФЕЙЕРВЕРКИ И ЧАСТИЦЫ ==========
-
+// ========== ФЕЙЕРВЕРКИ ==========
 const fireworkTypes = ['burst', 'ring', 'star', 'double', 'chaos'];
 
 function createFireworkExplosion(x, y, type = 'burst') {
-    const colors = [
-        "rgba(255,50,50,1)", "rgba(255,200,50,1)", "rgba(50,150,255,1)",
-        "rgba(255,100,255,1)", "rgba(100,255,100,1)", "rgba(255,150,50,1)"
-    ];
+    const colors = ["rgba(255,50,50,1)", "rgba(255,200,50,1)", "rgba(50,150,255,1)",
+        "rgba(255,100,255,1)", "rgba(100,255,100,1)", "rgba(255,150,50,1)"];
     const color = colors[Math.floor(Math.random() * colors.length)];
     
     switch(type) {
@@ -507,22 +508,16 @@ function createBurstParticles(x, y, color) {
     for(let i = 0; i < 60; i++) {
         const angle = (Math.PI * 2 * i) / 60;
         const speed = 2 + Math.random() * 5;
-        effects.push({
-            type: "fireworkParticle", x, y,
-            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-            life: 35, size: 2 + Math.random() * 3, color, gravity: 0.08, alpha: 1
-        });
+        effects.push({ type: "fireworkParticle", x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+            life: 35, size: 2 + Math.random() * 3, color, gravity: 0.08, alpha: 1 });
     }
 }
 
 function createRingParticles(x, y, color) {
     for(let i = 0; i < 50; i++) {
         const angle = (Math.PI * 2 * i) / 50;
-        effects.push({
-            type: "fireworkParticle", x, y,
-            vx: Math.cos(angle) * 4, vy: Math.sin(angle) * 4,
-            life: 30, size: 2, color, gravity: 0.05, alpha: 1
-        });
+        effects.push({ type: "fireworkParticle", x, y, vx: Math.cos(angle) * 4, vy: Math.sin(angle) * 4,
+            life: 30, size: 2, color, gravity: 0.05, alpha: 1 });
     }
 }
 
@@ -530,11 +525,8 @@ function createStarParticles(x, y, color) {
     for(let i = 0; i < 100; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = (i % 2 === 0) ? 5 : 2.5;
-        effects.push({
-            type: "fireworkParticle", x, y,
-            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-            life: 28, size: 1.5 + Math.random() * 2.5, color, gravity: 0.06, alpha: 1
-        });
+        effects.push({ type: "fireworkParticle", x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+            life: 28, size: 1.5 + Math.random() * 2.5, color, gravity: 0.06, alpha: 1 });
     }
 }
 
@@ -542,11 +534,8 @@ function createDoubleParticles(x, y, color) {
     for(let layer = 1; layer <= 2; layer++) {
         for(let i = 0; i < 40; i++) {
             const angle = (Math.PI * 2 * i) / 40;
-            effects.push({
-                type: "fireworkParticle", x, y,
-                vx: Math.cos(angle) * layer * 3, vy: Math.sin(angle) * layer * 3,
-                life: 32, size: 2, color, gravity: 0.07, alpha: 1
-            });
+            effects.push({ type: "fireworkParticle", x, y, vx: Math.cos(angle) * layer * 3, vy: Math.sin(angle) * layer * 3,
+                life: 32, size: 2, color, gravity: 0.07, alpha: 1 });
         }
     }
 }
@@ -556,12 +545,8 @@ function createChaosParticles(x, y, color) {
         const angle = Math.random() * Math.PI * 2;
         const speed = Math.random() * 7;
         const randomColor = Math.random() > 0.5 ? color : "rgba(255,255,200,1)";
-        effects.push({
-            type: "fireworkParticle", x, y,
-            vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-            life: 25 + Math.random() * 15, size: 1.5 + Math.random() * 2,
-            color: randomColor, gravity: 0.05 + Math.random() * 0.05, alpha: 1
-        });
+        effects.push({ type: "fireworkParticle", x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+            life: 25 + Math.random() * 15, size: 1.5 + Math.random() * 2, color: randomColor, gravity: 0.05 + Math.random() * 0.05, alpha: 1 });
     }
 }
 
@@ -580,10 +565,7 @@ function updateEffects() {
         const e = effects[i];
         e.life--;
         if(e.type === "spark") { e.x += e.vx; e.y += e.vy; }
-        if(e.type === "fireworkParticle") { 
-            e.x += e.vx; e.y += e.vy; 
-            e.vy += e.gravity || 0.06;
-        }
+        if(e.type === "fireworkParticle") { e.x += e.vx; e.y += e.vy; e.vy += e.gravity || 0.06; }
         if(e.life <= 0) effects.splice(i,1);
     }
 }
@@ -687,12 +669,12 @@ function handleCollisions() {
     }
 }
 
+// ========== ОБНОВЛЁННОЕ ДВИЖЕНИЕ С ПЛАВНЫМ РАЗБЕГОМ ==========
 function updateMovement() {
-    let curSpeed = baseSpeed;
     let isMoving = false;
     
+    // Рывок
     if(dash.active && dash.duration > 0) {
-        curSpeed = dash.speedBoost;
         dash.duration--;
         dash.afterImages.unshift({x: player.x, y: player.y});
         if(dash.afterImages.length > 6) dash.afterImages.pop();
@@ -709,11 +691,50 @@ function updateMovement() {
         if(typeof updateDashUI === 'function') updateDashUI();
     }
     
-    let dx = (move.right ? 1 : 0) - (move.left ? 1 : 0);
-    let dy = (move.down ? 1 : 0) - (move.up ? 1 : 0);
-    if(dx !== 0 || dy !== 0) { const len = Math.hypot(dx, dy); dx /= len; dy /= len; isMoving = true; }
+    // ПЛАВНЫЙ РАЗБЕГ И ОСТАНОВКА
+    let targetVelX = 0, targetVelY = 0;
     
-    let nx = player.x + dx * curSpeed, ny = player.y + dy * curSpeed;
+    if(moveInput.right) targetVelX = 1;
+    if(moveInput.left) targetVelX = -1;
+    if(moveInput.down) targetVelY = 1;
+    if(moveInput.up) targetVelY = -1;
+    
+    if(targetVelX !== 0 || targetVelY !== 0) {
+        const len = Math.hypot(targetVelX, targetVelY);
+        targetVelX /= len;
+        targetVelY /= len;
+        isMoving = true;
+    }
+    
+    if(dash.active && dash.duration > 0) {
+        // Рывок — мгновенный разгон
+        velocity.x = targetVelX * dash.speedBoost;
+        velocity.y = targetVelY * dash.speedBoost;
+    } else {
+        // Обычное движение
+        const targetSpeedX = targetVelX * maxSpeed;
+        const targetSpeedY = targetVelY * maxSpeed;
+        
+        velocity.x += (targetSpeedX - velocity.x) * 0.25;
+        velocity.y += (targetSpeedY - velocity.y) * 0.25;
+        
+        if(targetVelX === 0 && targetVelY === 0) {
+            velocity.x *= friction;
+            velocity.y *= friction;
+        }
+        
+        const speed = Math.hypot(velocity.x, velocity.y);
+        if(speed > maxSpeed) {
+            velocity.x = (velocity.x / speed) * maxSpeed;
+            velocity.y = (velocity.y / speed) * maxSpeed;
+        }
+        
+        if(Math.abs(velocity.x) < 0.1 && targetVelX === 0) velocity.x = 0;
+        if(Math.abs(velocity.y) < 0.1 && targetVelY === 0) velocity.y = 0;
+    }
+    
+    let nx = player.x + velocity.x;
+    let ny = player.y + velocity.y;
     const prevX = player.x, prevY = player.y;
     
     if(!checkTreeCollision(nx, ny)) {
@@ -722,10 +743,11 @@ function updateMovement() {
     }
     
     if(isMoving && !dash.active) {
-        const moveDist = (player.x - prevX)*(player.x - prevX) + (player.y - prevY)*(player.y - prevY);
-        if(moveDist > 4 && Math.random() < 0.3) addDustParticle(player.x, player.y);
+        const moveDist = Math.hypot(player.x - prevX, player.y - prevY);
+        if(moveDist > 2 && Math.random() < 0.3) addDustParticle(player.x, player.y);
     }
     if(dash.active && Math.random() < 0.5) addDustParticle(player.x, player.y);
+    
     if(player.invincible > 0) player.invincible--;
     if(dummyShake > 0) dummyShake--;
     updateCamera();
@@ -736,6 +758,7 @@ function resetGame() {
     player.x = MAP_W/2; 
     player.y = MAP_H/2; 
     player.invincible = 0; 
+    velocity = { x: 0, y: 0 };
     dash.active = false;
     dash.duration = 0;
     dash.cooldown = 0;
@@ -804,7 +827,6 @@ function drawSans() {
         ctx.globalAlpha = 1;
     }
     
-    // ВЫБОР СПРАЙТА: если анимация атаки активна — используем sans_attack
     const currentSprite = (attackAnimTimer > 0 && sprites.sans_attack.complete) ? sprites.sans_attack : sprites.sans;
     if(currentSprite && currentSprite.complete) { 
         ctx.translate(sx, sy); 
@@ -855,7 +877,6 @@ function gameUpdate(currentTime) {
     updateLampGradients();
     updateTreeAnimation(currentTime);
     
-    // Обновление анимации атаки Санса
     if(attackAnimTimer > 0) {
         attackAnimTimer--;
     }
