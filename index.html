@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>GitTale | ПК версия</title>
+    <title>GitTale | UNDERTALE RPG</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/png" href="sprites/icon.png">
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <div class="version-info">GitTale v0.0.6 (ПК)</div>
+    <div class="version-info">GitTale v0.1.1</div>
     
-    <div class="hud">
+    <!-- HUD (только для ПК) -->
+    <div class="hud pc-only">
         <div class="health-bar">❤️ <span id="hpValue">24</span>/24</div>
         <div class="abilities-hud">
             <div class="ability-hud" id="skill1Hud"><span class="key">1</span>КОСТЬ<span class="damage">10</span></div>
@@ -22,9 +23,71 @@
         <div class="dash-hud">⚡ <span id="dashReady">ГОТОВ</span></div>
     </div>
     
-    <button id="menuButton" class="menu-button">☰</button>
-    <button id="fullscreenBtn" class="fullscreen-btn">🖥️</button>
+    <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ -->
+    <div id="mobileControls" class="mobile-controls">
+        <div class="joystick-container">
+            <div class="joystick-base" id="joystickBase">
+                <div class="joystick-thumb" id="joystickThumb"></div>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button class="action-btn skill-btn" data-skill="1">1<br><span>КОСТЬ</span></button>
+            <button class="action-btn skill-btn" data-skill="2">2<br><span>ГАСТЕР</span></button>
+            <button class="action-btn skill-btn" data-skill="3">3<br><span>ЗАЛП</span></button>
+        </div>
+    </div>
     
+    <!-- КНОПКИ -->
+    <button id="menuButton" class="menu-button">☰</button>
+    <button id="fullscreenBtn" class="fullscreen-btn pc-only">🖥️</button>
+    <button id="openAdminBtn" class="admin-btn">🛠️ АДМИН</button>
+    
+    <!-- АДМИН-ПАНЕЛЬ -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="admin-header">
+            <h3>🛠️ АДМИН-ПАНЕЛЬ</h3>
+            <button id="closeAdminBtn">✕</button>
+        </div>
+        <div class="admin-content">
+            <div class="admin-section">
+                <h4>👤 ИГРОК</h4>
+                <button id="adminHeal">❤️ +10 HP</button>
+                <button id="adminDamage">💔 -10 HP</button>
+                <button id="adminGodMode">🛡️ БЕССМЕРТИЕ</button>
+                <button id="adminMaxSpeed">⚡ МАКС. СКОРОСТЬ</button>
+                <button id="adminNormalSpeed">🐢 НОРМ. СКОРОСТЬ</button>
+            </div>
+            <div class="admin-section">
+                <h4>🗺️ ТЕЛЕПОРТЫ</h4>
+                <button id="adminTeleportSpawn">📍 НА СПАВН</button>
+                <button id="adminTeleportDummy">🎯 К МАНЕКЕНУ</button>
+                <button id="adminTeleportSign">📜 К ТАБЛИЧКЕ</button>
+            </div>
+            <div class="admin-section">
+                <h4>🎨 ГРАФИКА</h4>
+                <button id="adminToggleLight">💡 ОСВЕЩЕНИЕ ВКЛ/ВЫКЛ</button>
+                <button id="adminToggleParticles">✨ ЧАСТИЦЫ ВКЛ/ВЫКЛ</button>
+                <button id="adminToggleShake">📳 ТРЯСКА ВКЛ/ВЫКЛ</button>
+            </div>
+            <div class="admin-section">
+                <h4>🎮 ИГРОВОЙ ПРОЦЕСС</h4>
+                <button id="adminPauseGame">⏸️ ПАУЗА</button>
+                <button id="adminResumeGame">▶️ ПРОДОЛЖИТЬ</button>
+                <button id="adminSlowMotion">🐢 SLOW MOTION</button>
+                <button id="adminFastMotion">⚡ FAST MOTION</button>
+                <button id="adminFirework">🎆 ФЕЙЕРВЕРК</button>
+                <button id="adminKillAll">💀 УБИТЬ СЕБЯ</button>
+            </div>
+            <div class="admin-section">
+                <h4>📊 ОТЛАДКА</h4>
+                <label>⚡ FPS: <span id="fpsCounter">0</span></label>
+                <label>📍 X: <span id="playerX">0</span> | Y: <span id="playerY">0</span></label>
+                <button id="adminShowHitboxes">🎯 ПОКАЗАТЬ ХИТБОКСЫ</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- МЕНЮ -->
     <div id="menuWindow" class="menu-window">
         <div class="menu-window-header"><h3>📋 МЕНЮ</h3></div>
         <div class="menu-window-content">
@@ -33,16 +96,24 @@
         </div>
     </div>
     
+    <!-- ОКНО СТАТИСТИКИ -->
     <div id="infoWindow" class="ui-window">
         <div class="ui-window-header"><h3>📜 СТАТИСТИКА</h3><button class="ui-window-close">✕</button></div>
         <div class="ui-window-content">
-            <p>Попаданий: <span id="statHits">0</span></p>
-            <p>Всего урона: <span id="statDamage">0</span></p>
-            <p>Гастеров: <span id="statGaster">0</span></p>
+            <p>⚔️ <strong>GitTale</strong></p>
+            <p>❶ КОСТЬ — урон 10</p>
+            <p>❷ ГАСТЕР — урон 50</p>
+            <p>❸ ЗАЛП — 3x10 урона</p>
+            <hr>
+            <p>🎯 <strong>СТАТИСТИКА</strong></p>
+            <p>Попаданий: <span id="statHits" class="stat-number">0</span></p>
+            <p>Всего урона: <span id="statDamage" class="stat-number">0</span></p>
+            <p>Гастеров: <span id="statGaster" class="stat-number">0</span></p>
             <hr>
             <p>💡 Клик по лампе — вкл/выкл</p>
             <p>📌 Нажми E у таблички</p>
-            <p>🎮 GitTale v0.0.6</p>
+            <p>🎮 GitTale v0.1.1</p>
+            <p>🛠️ Админ-панель: F12</p>
         </div>
     </div>
     
