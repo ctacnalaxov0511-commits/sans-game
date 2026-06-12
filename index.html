@@ -2,65 +2,45 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>GitTale | UNDERTALE RPG</title>
-    <link rel="icon" type="image/png" href="sprites/icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>GitTale | ПК версия</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="sprites/icon.png">
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     
-    <!-- ВЕРСИЯ ИГРЫ (только на ПК) -->
-    <div class="version-info pc-only">GitTale v0.0.5</div>
+    <div class="version-info">GitTale v0.0.5 (ПК)</div>
     
-    <!-- HUD (только на ПК) -->
-    <div class="hud pc-only">
-        <div class="health-bar"><span class="heart">❤️</span><span id="hpValue">24</span><span>/24</span></div>
+    <div class="hud">
+        <div class="health-bar">❤️ <span id="hpValue">24</span>/24</div>
         <div class="abilities-hud">
-            <div class="ability-hud" id="skill1Hud"><span class="key">1</span><span class="skill-name">КОСТЬ</span><span class="damage">10</span></div>
-            <div class="ability-hud" id="skill2Hud"><span class="key">2</span><span class="skill-name">ГАСТЕР</span><span class="damage">50</span></div>
-            <div class="ability-hud" id="skill3Hud"><span class="key">3</span><span class="skill-name">ЗАЛП</span><span class="damage">30</span></div>
+            <div class="ability-hud" id="skill1Hud"><span class="key">1</span>КОСТЬ<span class="damage">10</span></div>
+            <div class="ability-hud" id="skill2Hud"><span class="key">2</span>ГАСТЕР<span class="damage">50</span></div>
+            <div class="ability-hud" id="skill3Hud"><span class="key">3</span>ЗАЛП<span class="damage">30</span></div>
         </div>
-        <div class="dash-hud" id="dashHud"><span class="dash-icon">⚡</span><span id="dashReady">ГОТОВ</span></div>
-    </div>
-    
-    <!-- МОБИЛЬНОЕ УПРАВЛЕНИЕ -->
-    <div id="mobileControls" class="mobile-controls">
-        <div class="joystick-container">
-            <div class="joystick-base" id="joystickBase">
-                <div class="joystick-thumb" id="joystickThumb"></div>
-            </div>
-        </div>
-        <div class="action-buttons">
-            <button class="action-btn skill-btn" data-skill="1">1<br><span>КОСТЬ</span></button>
-            <button class="action-btn skill-btn" data-skill="2">2<br><span>ГАСТЕР</span></button>
-            <button class="action-btn skill-btn" data-skill="3">3<br><span>ЗАЛП</span></button>
-        </div>
+        <div class="dash-hud">⚡ <span id="dashReady">ГОТОВ</span></div>
     </div>
     
     <button id="menuButton" class="menu-button">☰</button>
-    <button id="fullscreenBtn" class="fullscreen-btn pc-only">🖥️</button>
+    <button id="fullscreenBtn" class="fullscreen-btn">🖥️</button>
     
     <div id="menuWindow" class="menu-window">
         <div class="menu-window-header"><h3>📋 МЕНЮ</h3></div>
         <div class="menu-window-content">
-            <button id="resumeGameBtn" class="menu-btn resume-btn">▶ ВЕРНУТЬСЯ В ИГРУ</button>
+            <button id="resumeGameBtn" class="menu-btn resume-btn">▶ ВЕРНУТЬСЯ</button>
             <button id="exitGameBtn" class="menu-btn exit-btn">🚪 ВЫЙТИ</button>
         </div>
     </div>
     
     <div id="infoWindow" class="ui-window">
-        <div class="ui-window-header"><h3>📜 СТАТИСТИКА</h3><button class="ui-window-close" id="closeWindowBtn">✕</button></div>
+        <div class="ui-window-header"><h3>📜 СТАТИСТИКА</h3><button class="ui-window-close">✕</button></div>
         <div class="ui-window-content">
-            <p>⚔️ <strong>GitTale</strong></p>
-            <p>❶ КОСТЬ — урон 10</p>
-            <p>❷ ГАСТЕР — урон 50</p>
-            <p>❸ ЗАЛП — 3x10 урона</p>
-            <hr><p>🎯 <strong>СТАТИСТИКА</strong></p>
-            <p>Попаданий: <span id="statHits" class="stat-number">0</span></p>
-            <p>Всего урона: <span id="statDamage" class="stat-number">0</span></p>
-            <p>Гастеров: <span id="statGaster" class="stat-number">0</span></p>
-            <hr><p>💡 Клик по лампе — вкл/выкл</p>
+            <p>Попаданий: <span id="statHits">0</span></p>
+            <p>Всего урона: <span id="statDamage">0</span></p>
+            <p>Гастеров: <span id="statGaster">0</span></p>
+            <hr>
+            <p>💡 Клик по лампе — вкл/выкл</p>
             <p>📌 Нажми E у таблички</p>
             <p>🎮 GitTale v0.0.5</p>
         </div>
@@ -68,6 +48,7 @@
     
     <div id="loader">🔥 ЗАГРУЗКА СПРАЙТОВ...</div>
     
-    <script src="game.js"></script>
+    <script src="js/shared.js"></script>
+    <script src="js/pc.js"></script>
 </body>
 </html>
