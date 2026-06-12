@@ -1,10 +1,10 @@
 // ========== pc.js — ПК УПРАВЛЕНИЕ ==========
-// GitTale v0.0.5
+// GitTale v0.0.8
+
+// ВКЛЮЧАЕМ ФЕЙЕРВЕРКИ ДЛЯ ПК ВЕРСИИ
+fireworkEnabled = true;
 
 let mouseInCanvas = false;
-
-// Переопределяем cursorWorld из shared.js (он уже объявлен там глобально)
-// cursorWorld используется для прицела и направления Гастер-бластера
 
 function updateCursor(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
@@ -202,5 +202,5 @@ function initPlatform() {
     updateHealthUI();
     updateDashUI();
     updateCooldownUI();
-    console.log("ПК версия загружена");
+    console.log("ПК версия загружена (с фейерверками)");
 }
