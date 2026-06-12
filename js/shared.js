@@ -142,7 +142,7 @@ function drawPaths() {
     }
 }
 
-// ========== ДЕРЕВЬЯ (БОЛЬШИЕ, РАЗНОГО РАЗМЕРА, КРУГЛАЯ КОЛЛИЗИЯ) ==========
+// ========== ДЕРЕВЬЯ (ВИД СВЕРХУ, НАД ИГРОКОМ) ==========
 let trees = [];
 let treeCollision = [];
 
@@ -150,49 +150,45 @@ function generateTrees() {
     trees = [];
     treeCollision = [];
     
-    function isTooCloseToPath(x, y, margin = 50) {
+    function isTooCloseToPath(x, y, margin = 45) {
         for(let tile of pathTiles) {
             if(Math.abs(x - tile.x) < margin && Math.abs(y - tile.y) < margin) return true;
         }
         return false;
     }
     
-    function isTooCloseToOtherTrees(x, y, margin = 100) {
+    function isTooCloseToOtherTrees(x, y, margin = 70) {
         for(let tree of trees) {
             if(Math.abs(x - tree.x) < margin && Math.abs(y - tree.y) < margin) return true;
         }
         return false;
     }
     
-    const treeCount = 60;
+    const treeCount = 80;
     
     for(let i = 0; i < treeCount; i++) {
         let attempts = 0;
         let placed = false;
         
         while(!placed && attempts < 50) {
-            const x = 80 + Math.random() * (MAP_W - 160);
-            const y = 80 + Math.random() * (MAP_H - 160);
+            const x = 60 + Math.random() * (MAP_W - 120);
+            const y = 60 + Math.random() * (MAP_H - 120);
             
-            if(!isTooCloseToPath(x, y, 60) && !isTooCloseToOtherTrees(x, y, 90)) {
+            if(!isTooCloseToPath(x, y, 45) && !isTooCloseToOtherTrees(x, y, 65)) {
                 const distToDummy = Math.hypot(x - dummyObj.x, y - dummyObj.y);
                 const distToSign = Math.hypot(x - sign.x, y - sign.y);
                 const distToSpawn = Math.hypot(x - MAP_W/2, y - MAP_H/2);
-                const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 120);
+                const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 90);
                 
-                if(distToDummy > 130 && distToSign > 130 && distToSpawn > 130 && !distToLamp) {
-                    // Случайный размер от 0.8 до 1.3
-                    const scale = 0.8 + Math.random() * 0.6;
-                    // Радиус коллизии = размер * 0.35 (в ~2.85 раза меньше)
-                    const collisionRadius = 64 * scale * 0.45;
-                    
+                if(distToDummy > 100 && distToSign > 100 && distToSpawn > 100 && !distToLamp) {
+                    const radius = 24 + Math.random() * 20;
                     trees.push({ 
                         x, y, 
                         frame: Math.random() < 0.5 ? 0 : 1,
-                        scale: scale,
-                        size: 128 * scale
+                        radius: radius,
+                        size: radius * 2
                     });
-                    treeCollision.push({ x, y, radius: collisionRadius });
+                    treeCollision.push({ x, y, radius: radius - 4 });
                     placed = true;
                 }
             }
@@ -224,14 +220,24 @@ function checkTreeCollision(newX, newY) {
 function drawTrees() {
     for(let tree of trees) {
         const sx = tree.x - camera.x, sy = tree.y - camera.y;
-        const size = tree.size;
-        const halfSize = size / 2;
+        const radius = tree.radius;
+        const diameter = radius * 2;
         
-        if(sx + size < -50 || sx > SCREEN_W + 50 || sy + size < -50 || sy > SCREEN_H + 50) continue;
+        if(sx + radius < -50 || sx - radius > SCREEN_W + 50 || 
+           sy + radius < -50 || sy - radius > SCREEN_H + 50) continue;
         
         const currentSprite = tree.frame === 0 ? sprites.fir : sprites.fir2;
         if(currentSprite && currentSprite.complete) {
-            ctx.drawImage(currentSprite, sx - halfSize, sy - size, size, size);
+            ctx.drawImage(currentSprite, sx - radius, sy - radius, diameter, diameter);
+        } else {
+            ctx.beginPath();
+            ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#2d5a2d";
+            ctx.fill();
+            ctx.fillStyle = "#3a7a3a";
+            ctx.beginPath();
+            ctx.arc(sx - 3, sy - 3, radius * 0.6, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 }
@@ -656,7 +662,6 @@ function drawSign() {
 function drawDummy() {
     if(!isOnScreen(dummyObj.x, dummyObj.y)) return;
     
-    // Только тряска, без свечения
     let shakeX = 0, shakeY = 0;
     if(dummyShake > 0) { 
         const intensity = dummyShake / 3; 
@@ -729,8 +734,8 @@ function render() {
     drawSign(); 
     drawLamps(); 
     drawDummy(); 
-    drawSans();        // Игрок сначала
-    drawTrees();       // Деревья поверх игрока
+    drawTrees();       // ДЕРЕВЬЯ ПОД ИГРОКОМ (вид сверху)
+    drawSans();        // ИГРОК ПОВЕРХ ДЕРЕВЬЕВ
     drawDustParticles();
     drawDynamicLighting();
 }
