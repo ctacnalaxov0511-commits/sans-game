@@ -19,6 +19,9 @@ let camera = { x: 0, y: 0 };
 let gamePaused = false;
 let windowOpen = false;
 
+// Глобальная переменная для позиции курсора (ПК) или направления (мобила)
+let cursorWorld = { x: 0, y: 0 };
+
 function updateCamera() {
     camera.x = Math.min(Math.max(player.x - SCREEN_W / 2, 0), MAP_W - SCREEN_W);
     camera.y = Math.min(Math.max(player.y - SCREEN_H / 2, 0), MAP_H - SCREEN_H);
@@ -362,7 +365,8 @@ class BoneProjectile {
 let activeGasterBlasters = [];
 class GasterBlaster {
     constructor(x, y, tx, ty) {
-        this.x = x; this.y = y; this.angle = Math.atan2(ty - y, tx - x);
+        this.x = x; this.y = y;
+        this.angle = Math.atan2(ty - y, tx - x);
         this.frame = 0; this.maxFrames = 55; this.beamAlpha = 0; this.hasDamaged = false; this.size = 0;
         addLightSource(x, y, 160, [255,100,60], 0.85);
     }
@@ -462,12 +466,27 @@ function castGasterBlaster() {
     cooldowns.skill2 = 95;
     stats.gasterCount++;
     updateStatsUI();
-    const radius = 180 + Math.random() * 100, ang = Math.random() * Math.PI * 2;
-    let sx = player.x + Math.cos(ang) * radius, sy = player.y + Math.sin(ang) * radius;
-    sx = Math.min(Math.max(sx, 80), MAP_W - 80);
-    sy = Math.min(Math.max(sy, 80), MAP_H - 80);
-    activeGasterBlasters.push(new GasterBlaster(sx, sy, player.x + Math.cos(player.angle)*100, player.y + Math.sin(player.angle)*100));
-    addFloatingText("💀 GASTER BLASTER 💀", sx-40, sy-30, "#ffaa77", true);
+    
+    // Используем глобальную переменную cursorWorld (курсор/направление)
+    let targetX = cursorWorld.x;
+    let targetY = cursorWorld.y;
+    
+    // Если курсор не определён (в начале игры) — стреляем вперёд
+    if((targetX === 0 && targetY === 0) || (targetX === undefined)) {
+        targetX = player.x + Math.cos(player.angle) * 200;
+        targetY = player.y + Math.sin(player.angle) * 200;
+    }
+    
+    // Радиус спавна вокруг цели
+    const radius = 180 + Math.random() * 100;
+    const spawnAngle = Math.random() * Math.PI * 2;
+    let spawnX = targetX + Math.cos(spawnAngle) * radius;
+    let spawnY = targetY + Math.sin(spawnAngle) * radius;
+    spawnX = Math.min(Math.max(spawnX, 80), MAP_W - 80);
+    spawnY = Math.min(Math.max(spawnY, 80), MAP_H - 80);
+    
+    activeGasterBlasters.push(new GasterBlaster(spawnX, spawnY, targetX, targetY));
+    addFloatingText("💀 GASTER BLASTER 💀", spawnX-40, spawnY-30, "#ffaa77", true);
     if(typeof updateCooldownUI === 'function') updateCooldownUI();
 }
 
