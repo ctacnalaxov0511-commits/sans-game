@@ -28,19 +28,7 @@ canvas {
     z-index: 1;
 }
 
-/* ========== ТОЛЬКО ДЛЯ ПК ========== */
-.pc-only {
-    display: block;
-}
-
-/* ========== ТОЛЬКО ДЛЯ ТЕЛЕФОНОВ ========== */
-@media (max-width: 768px) {
-    .pc-only {
-        display: none !important;
-    }
-}
-
-/* ========== ВЕРСИЯ (ПК) ========== */
+/* ========== ВЕРСИЯ ========== */
 .version-info {
     position: fixed;
     bottom: 15px;
@@ -56,7 +44,7 @@ canvas {
     pointer-events: none;
 }
 
-/* ========== HUD (ПК) ========== */
+/* ========== HUD ========== */
 .hud {
     position: fixed;
     top: 20px;
@@ -86,7 +74,10 @@ canvas {
     font-size: 18px;
 }
 
-.heart { color: #ff3366; margin-right: 6px; }
+.heart {
+    color: #ff3366;
+    margin-right: 6px;
+}
 
 .abilities-hud {
     display: flex;
@@ -106,13 +97,25 @@ canvas {
     border-radius: 40px;
     font-size: 13px;
     font-weight: bold;
-    border: 1px solid rgba(100,200,255,0.3);
+    border: 1px solid rgba(100, 200, 255, 0.3);
     transition: 0.1s;
 }
 
-.ability-hud .key { background: #000000aa; padding: 2px 6px; border-radius: 20px; color: #ffd966; }
-.ability-hud .damage { color: #ffaa66; }
-.ability-hud.cooldown-active { opacity: 0.5; filter: grayscale(0.3); }
+.ability-hud .key {
+    background: #000000aa;
+    padding: 2px 6px;
+    border-radius: 20px;
+    color: #ffd966;
+}
+
+.ability-hud .damage {
+    color: #ffaa66;
+}
+
+.ability-hud.cooldown-active {
+    opacity: 0.5;
+    filter: grayscale(0.3);
+}
 
 .dash-hud {
     background: rgba(0, 0, 0, 0.75);
@@ -127,7 +130,7 @@ canvas {
     gap: 8px;
 }
 
-/* ========== КНОПКИ ОБЩИЕ ========== */
+/* ========== КНОПКИ ========== */
 .menu-button {
     position: fixed;
     right: 20px;
@@ -149,13 +152,16 @@ canvas {
     transition: 0.2s;
 }
 
-.menu-button:hover { background: rgba(255, 170, 102, 0.3); transform: translateY(-50%) scale(1.05); }
+.menu-button:hover {
+    background: rgba(255, 170, 102, 0.3);
+    transform: translateY(-50%) scale(1.05);
+}
 
 .fullscreen-btn {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid #ffaa66;
     color: #ffaa66;
     padding: 10px 15px;
@@ -163,6 +169,217 @@ canvas {
     font-size: 18px;
     cursor: pointer;
     z-index: 200;
+}
+
+/* ========== АДМИН-ПАНЕЛЬ ========== */
+.admin-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid #ff3366;
+    color: #ff6688;
+    padding: 10px 15px;
+    border-radius: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    z-index: 300;
+    transition: 0.2s;
+}
+
+.admin-btn:hover {
+    background: rgba(255, 51, 102, 0.3);
+    color: #ff88aa;
+}
+
+.admin-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 420px;
+    max-width: 90vw;
+    max-height: 85vh;
+    background: #0a0f1a;
+    border: 2px solid #ff6688;
+    border-radius: 20px;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    overflow-y: auto;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+.admin-header {
+    background: #1a2a2a;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #ff6688;
+    border-radius: 18px 18px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.admin-header h3 {
+    color: #ff6688;
+    margin: 0;
+    font-size: 16px;
+}
+
+#closeAdminBtn {
+    background: #5a2a2a;
+    border: none;
+    color: #ffaa88;
+    font-size: 18px;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+}
+
+.admin-content {
+    padding: 15px;
+}
+
+.admin-section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #2a3a4a;
+    padding-bottom: 15px;
+}
+
+.admin-section h4 {
+    color: #ffaa66;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+}
+
+.admin-section button {
+    background: #1e3a42;
+    border: 1px solid #4a7a8a;
+    color: #88ddff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    cursor: pointer;
+    margin: 3px;
+    transition: 0.1s;
+}
+
+.admin-section button:hover {
+    background: #2e5a6a;
+    transform: scale(1.02);
+}
+
+.admin-section label {
+    display: block;
+    color: #aaccee;
+    font-size: 11px;
+    margin: 5px 0;
+}
+
+/* ========== ОКНА ========== */
+.menu-window,
+.ui-window {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    background: #0a0f1a;
+    border: 3px solid #ffcc88;
+    border-radius: 20px;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+.menu-window-header,
+.ui-window-header {
+    background: #1a2a2a;
+    padding: 12px;
+    text-align: center;
+    border-bottom: 2px solid #ffaa66;
+    border-radius: 17px 17px 0 0;
+}
+
+.menu-window-header h3,
+.ui-window-header h3 {
+    color: #ffdd99;
+    margin: 0;
+}
+
+.menu-window-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.ui-window-content {
+    padding: 15px;
+    color: #e0e0e0;
+    background: #0f1420;
+    border-radius: 0 0 17px 17px;
+    font-size: 12px;
+}
+
+.menu-btn {
+    padding: 12px;
+    border-radius: 40px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
+}
+
+.resume-btn {
+    background: #1e4a5f;
+    color: #88ddff;
+    border: 1px solid #88ddff;
+}
+
+.exit-btn {
+    background: #5a1a1a;
+    color: #ffaa88;
+    border: 1px solid #ff8866;
+}
+
+.ui-window-close {
+    background: #5a2a2a;
+    border: none;
+    color: #ffaa88;
+    font-size: 18px;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
+
+.stat-number {
+    color: #ffaa66;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0a0f1a;
+    color: #ffaa66;
+    padding: 20px;
+    border-radius: 20px;
+    z-index: 1000;
 }
 
 /* ========== МОБИЛЬНОЕ УПРАВЛЕНИЕ ========== */
@@ -235,88 +452,98 @@ canvas {
     justify-content: center;
 }
 
-.action-btn span { font-size: 10px; margin-top: 2px; }
-.action-btn:active { transform: scale(0.95); background: rgba(255, 170, 102, 0.4); }
-
-/* ========== ОКНА ========== */
-.menu-window, .ui-window {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 300px;
-    background: #0a0f1a;
-    border: 3px solid #ffcc88;
-    border-radius: 20px;
-    z-index: 1000;
-    display: none;
-    flex-direction: column;
-    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+.action-btn span {
+    font-size: 10px;
+    margin-top: 2px;
 }
 
-.menu-window-header, .ui-window-header {
-    background: #1a2a2a;
-    padding: 12px;
-    text-align: center;
-    border-bottom: 2px solid #ffaa66;
-    border-radius: 17px 17px 0 0;
-}
-
-.menu-window-header h3, .ui-window-header h3 { color: #ffdd99; margin: 0; }
-.menu-window-content { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-.ui-window-content { padding: 15px; color: #e0e0e0; background: #0f1420; border-radius: 0 0 17px 17px; font-size: 12px; }
-
-.menu-btn {
-    padding: 12px;
-    border-radius: 40px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    border: none;
-    transition: 0.2s;
-}
-
-.resume-btn { background: #1e4a5f; color: #88ddff; border: 1px solid #88ddff; }
-.exit-btn { background: #5a1a1a; color: #ffaa88; border: 1px solid #ff8866; }
-
-.ui-window-close {
-    background: #5a2a2a;
-    border: none;
-    color: #ffaa88;
-    font-size: 18px;
-    cursor: pointer;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    position: absolute;
-    top: 8px;
-    right: 8px;
-}
-
-.stat-number { color: #ffaa66; font-weight: bold; font-size: 16px; }
-
-#loader {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #0a0f1a;
-    color: #ffaa66;
-    padding: 20px;
-    border-radius: 20px;
-    z-index: 1000;
+.action-btn:active {
+    transform: scale(0.95);
+    background: rgba(255, 170, 102, 0.4);
 }
 
 /* ========== АДАПТАЦИЯ ДЛЯ ТЕЛЕФОНОВ ========== */
 @media (max-width: 768px) {
-    .joystick-container { width: 100px; height: 100px; }
-    .joystick-thumb { width: 40px; height: 40px; }
-    .action-btn { width: 60px; height: 60px; font-size: 20px; }
-    .action-btn span { font-size: 9px; }
+    .hud {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        gap: 8px;
+    }
+    .health-bar {
+        padding: 4px 12px;
+        font-size: 14px;
+    }
+    .ability-hud {
+        padding: 3px 10px;
+        font-size: 10px;
+        gap: 4px;
+    }
+    .ability-hud .key {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+    .dash-hud {
+        padding: 4px 12px;
+        font-size: 11px;
+    }
+    .menu-button {
+        width: 40px;
+        height: 40px;
+        font-size: 22px;
+        right: 15px;
+    }
+    .fullscreen-btn {
+        bottom: 15px;
+        right: 15px;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    .version-info {
+        font-size: 9px;
+        bottom: 10px;
+        left: 10px;
+    }
+    .admin-btn {
+        bottom: 15px;
+        left: 15px;
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+    .joystick-container {
+        width: 100px;
+        height: 100px;
+    }
+    .joystick-thumb {
+        width: 40px;
+        height: 40px;
+    }
+    .action-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+    }
+    .action-btn span {
+        font-size: 9px;
+    }
 }
 
 @media (max-width: 500px) {
-    .joystick-container { width: 80px; height: 80px; }
-    .joystick-thumb { width: 32px; height: 32px; }
-    .action-btn { width: 55px; height: 55px; font-size: 18px; }
+    .joystick-container {
+        width: 80px;
+        height: 80px;
+    }
+    .joystick-thumb {
+        width: 32px;
+        height: 32px;
+    }
+    .action-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 18px;
+    }
+    .abilities-hud {
+        gap: 6px;
+        padding: 4px 10px;
+    }
 }
