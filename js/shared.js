@@ -1,5 +1,5 @@
 // ========== shared.js — ОБЩАЯ ЛОГИКА ==========
-// GitTale v0.0.5
+// GitTale v0.0.6
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -21,6 +21,10 @@ let windowOpen = false;
 
 // Глобальная переменная для позиции курсора (ПК) или направления (мобила)
 let cursorWorld = { x: 0, y: 0 };
+
+// Переменные для анимации деревьев
+let lastAnimUpdate = 0;
+const ANIM_SPEED = 200; // 200 мс между кадрами
 
 function updateCamera() {
     camera.x = Math.min(Math.max(player.x - SCREEN_W / 2, 0), MAP_W - SCREEN_W);
@@ -138,7 +142,7 @@ function drawPaths() {
     }
 }
 
-// ========== ДЕРЕВЬЯ ==========
+// ========== ДЕРЕВЬЯ С АНИМАЦИЕЙ ==========
 let trees = [];
 let treeCollision = [];
 
@@ -177,12 +181,22 @@ function generateTrees() {
                 const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 100);
                 
                 if(distToDummy > 100 && distToSign > 100 && distToSpawn > 100 && !distToLamp) {
-                    trees.push({ x, y });
+                    trees.push({ x, y, frame: Math.random() < 0.5 ? 0 : 1 });
                     treeCollision.push({ x, y, radius: 28 });
                     placed = true;
                 }
             }
             attempts++;
+        }
+    }
+}
+
+function updateTreeAnimation(currentTime) {
+    if(!lastAnimUpdate) lastAnimUpdate = currentTime;
+    if(currentTime - lastAnimUpdate >= ANIM_SPEED) {
+        lastAnimUpdate = currentTime;
+        for(let tree of trees) {
+            tree.frame = tree.frame === 0 ? 1 : 0;
         }
     }
 }
@@ -201,8 +215,15 @@ function drawTrees() {
     for(let tree of trees) {
         const sx = tree.x - camera.x, sy = tree.y - camera.y;
         if(sx + 64 < -50 || sx > SCREEN_W + 50 || sy + 128 < -50 || sy > SCREEN_H + 50) continue;
-        if(sprites.fir && sprites.fir.complete) ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
-        if(sprites.fir2 && sprites.fir2.complete) ctx.drawImage(sprites.fir2, sx - 24, sy - 96, 80, 96);
+        
+        if(sprites.fir && sprites.fir.complete) {
+            ctx.drawImage(sprites.fir, sx - 16, sy - 32, 64, 64);
+        }
+        
+        if(sprites.fir2 && sprites.fir2.complete) {
+            const currentSprite = tree.frame === 0 ? sprites.fir : sprites.fir2;
+            ctx.drawImage(currentSprite, sx - 24, sy - 96, 80, 96);
+        }
     }
 }
 
@@ -467,17 +488,14 @@ function castGasterBlaster() {
     stats.gasterCount++;
     updateStatsUI();
     
-    // Используем глобальную переменную cursorWorld (курсор/направление)
     let targetX = cursorWorld.x;
     let targetY = cursorWorld.y;
     
-    // Если курсор не определён (в начале игры) — стреляем вперёд
     if((targetX === 0 && targetY === 0) || (targetX === undefined)) {
         targetX = player.x + Math.cos(player.angle) * 200;
         targetY = player.y + Math.sin(player.angle) * 200;
     }
     
-    // Радиус спавна вокруг цели
     const radius = 180 + Math.random() * 100;
     const spawnAngle = Math.random() * Math.PI * 2;
     let spawnX = targetX + Math.cos(spawnAngle) * radius;
@@ -672,7 +690,7 @@ function updateProjectiles() { let i = projectiles.length; while(i--) { projecti
 function updateGasterBlasters() { let i = activeGasterBlasters.length; while(i--) { if(!activeGasterBlasters[i].update()) activeGasterBlasters.splice(i,1); } }
 function updateCooldowns() { if(cooldowns.skill1 > 0) cooldowns.skill1--; if(cooldowns.skill2 > 0) cooldowns.skill2--; if(cooldowns.skill3 > 0) cooldowns.skill3--; if(typeof updateCooldownUI === 'function') updateCooldownUI(); }
 
-function gameUpdate() { 
+function gameUpdate(currentTime) { 
     updateMovement(); 
     updateProjectiles(); 
     handleCollisions(); 
@@ -682,6 +700,7 @@ function gameUpdate() {
     updateDustParticles();
     updateLightSources();
     updateLampGradients();
+    updateTreeAnimation(currentTime);
 }
 
 function render() { 
@@ -702,7 +721,7 @@ function loop(currentTime) {
     requestAnimationFrame(loop);
     if(currentTime - lastFrameTime < FRAME_DELAY) return;
     lastFrameTime = currentTime;
-    if(!gamePaused) gameUpdate();
+    if(!gamePaused) gameUpdate(currentTime);
     render();
 }
 
