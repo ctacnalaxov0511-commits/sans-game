@@ -1,5 +1,5 @@
 // ========== shared.js — ОБЩАЯ ЛОГИКА ==========
-// GitTale v0.0.6
+// GitTale v0.0.7
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -24,7 +24,7 @@ let cursorWorld = { x: 0, y: 0 };
 
 // Переменные для анимации деревьев
 let lastAnimUpdate = 0;
-const ANIM_SPEED = 400; // 200 мс между кадрами
+const ANIM_SPEED = 200; // 200 мс между кадрами
 
 function updateCamera() {
     camera.x = Math.min(Math.max(player.x - SCREEN_W / 2, 0), MAP_W - SCREEN_W);
@@ -142,7 +142,7 @@ function drawPaths() {
     }
 }
 
-// ========== ДЕРЕВЬЯ (ЦЕЛЬНЫЕ, АНИМИРОВАННЫЕ) ==========
+// ========== ДЕРЕВЬЯ (БОЛЬШИЕ, РАЗНОГО РАЗМЕРА, КРУГЛАЯ КОЛЛИЗИЯ) ==========
 let trees = [];
 let treeCollision = [];
 
@@ -150,21 +150,21 @@ function generateTrees() {
     trees = [];
     treeCollision = [];
     
-    function isTooCloseToPath(x, y, margin = 40) {
+    function isTooCloseToPath(x, y, margin = 50) {
         for(let tile of pathTiles) {
             if(Math.abs(x - tile.x) < margin && Math.abs(y - tile.y) < margin) return true;
         }
         return false;
     }
     
-    function isTooCloseToOtherTrees(x, y, margin = 80) {
+    function isTooCloseToOtherTrees(x, y, margin = 100) {
         for(let tree of trees) {
             if(Math.abs(x - tree.x) < margin && Math.abs(y - tree.y) < margin) return true;
         }
         return false;
     }
     
-    const treeCount = 80;
+    const treeCount = 60;
     
     for(let i = 0; i < treeCount; i++) {
         let attempts = 0;
@@ -174,15 +174,25 @@ function generateTrees() {
             const x = 80 + Math.random() * (MAP_W - 160);
             const y = 80 + Math.random() * (MAP_H - 160);
             
-            if(!isTooCloseToPath(x, y, 50) && !isTooCloseToOtherTrees(x, y, 70)) {
+            if(!isTooCloseToPath(x, y, 60) && !isTooCloseToOtherTrees(x, y, 90)) {
                 const distToDummy = Math.hypot(x - dummyObj.x, y - dummyObj.y);
                 const distToSign = Math.hypot(x - sign.x, y - sign.y);
                 const distToSpawn = Math.hypot(x - MAP_W/2, y - MAP_H/2);
-                const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 100);
+                const distToLamp = lamps.some(l => Math.hypot(x - l.x, y - l.y) < 120);
                 
-                if(distToDummy > 100 && distToSign > 100 && distToSpawn > 100 && !distToLamp) {
-                    trees.push({ x, y, frame: Math.random() < 0.5 ? 0 : 1 });
-                    treeCollision.push({ x, y, radius: 28 });
+                if(distToDummy > 130 && distToSign > 130 && distToSpawn > 130 && !distToLamp) {
+                    // Случайный размер от 0.8 до 1.3
+                    const scale = 0.8 + Math.random() * 0.6;
+                    // Радиус коллизии = размер * 0.35 (в ~2.85 раза меньше)
+                    const collisionRadius = 64 * scale * 0.45;
+                    
+                    trees.push({ 
+                        x, y, 
+                        frame: Math.random() < 0.5 ? 0 : 1,
+                        scale: scale,
+                        size: 128 * scale
+                    });
+                    treeCollision.push({ x, y, radius: collisionRadius });
                     placed = true;
                 }
             }
@@ -214,11 +224,14 @@ function checkTreeCollision(newX, newY) {
 function drawTrees() {
     for(let tree of trees) {
         const sx = tree.x - camera.x, sy = tree.y - camera.y;
-        if(sx + 64 < -50 || sx > SCREEN_W + 50 || sy + 64 < -50 || sy > SCREEN_H + 50) continue;
+        const size = tree.size;
+        const halfSize = size / 2;
+        
+        if(sx + size < -50 || sx > SCREEN_W + 50 || sy + size < -50 || sy > SCREEN_H + 50) continue;
         
         const currentSprite = tree.frame === 0 ? sprites.fir : sprites.fir2;
         if(currentSprite && currentSprite.complete) {
-            ctx.drawImage(currentSprite, sx - 32, sy - 64, 64, 64);
+            ctx.drawImage(currentSprite, sx - halfSize, sy - size, size, size);
         }
     }
 }
@@ -334,7 +347,7 @@ let move = { up: false, down: false, left: false, right: false };
 let baseSpeed = 5.2;
 let dash = { active: false, duration: 0, cooldown: 0, speedBoost: 16.5, trailPositions: [], afterImages: [], canDash: true };
 
-// ========== МАНЕКЕН С ТРЯСКОЙ ==========
+// ========== МАНЕКЕН С ТРЯСКОЙ (БЕЗ СВЕЧЕНИЯ) ==========
 const dummyObj = { x: MAP_W - 350, y: MAP_H/2, radius: 35 };
 let dummyShake = 0;
 function isHitDummy(x, y, rad) { const dx = x - dummyObj.x, dy = y - dummyObj.y; return dx*dx + dy*dy < (dummyObj.radius + rad) ** 2; }
@@ -642,12 +655,21 @@ function drawSign() {
 
 function drawDummy() {
     if(!isOnScreen(dummyObj.x, dummyObj.y)) return;
+    
+    // Только тряска, без свечения
     let shakeX = 0, shakeY = 0;
-    if(dummyShake > 0) { const intensity = dummyShake / 3; shakeX = (Math.random() - 0.5) * intensity * 4; shakeY = (Math.random() - 0.5) * intensity * 3; }
+    if(dummyShake > 0) { 
+        const intensity = dummyShake / 3; 
+        shakeX = (Math.random() - 0.5) * intensity * 4; 
+        shakeY = (Math.random() - 0.5) * intensity * 3; 
+    }
+    
     const sx = dummyObj.x - camera.x + shakeX, sy = dummyObj.y - camera.y + shakeY;
     drawShadowTopDown(dummyObj.x + shakeX, dummyObj.y + shakeY, dummyObj.radius, 0.4);
     if(sprites.dummy.complete) ctx.drawImage(sprites.dummy, sx - 32, sy - 32, 64, 64);
-    ctx.font = "10px monospace"; ctx.fillStyle = "#ffaa66"; ctx.fillText("БЕССМЕРТЕН", sx-35, sy-38);
+    ctx.font = "10px monospace"; 
+    ctx.fillStyle = "#ffaa66"; 
+    ctx.fillText("БЕССМЕРТЕН", sx-35, sy-38);
 }
 
 function drawSans() {
@@ -704,11 +726,11 @@ function render() {
     drawEffects(); 
     for(let p of projectiles) p.draw(); 
     for(let g of activeGasterBlasters) g.draw(); 
-    drawTrees(); 
     drawSign(); 
     drawLamps(); 
     drawDummy(); 
-    drawSans(); 
+    drawSans();        // Игрок сначала
+    drawTrees();       // Деревья поверх игрока
     drawDustParticles();
     drawDynamicLighting();
 }
