@@ -2,6 +2,17 @@
 // GitTale v0.1.0
 
 let mouseInCanvas = false;
+let lastActionTime = 0;
+const ACTION_COOLDOWN = 100; // 100 мс
+
+function canPerformAction() {
+    const now = Date.now();
+    if(now - lastActionTime >= ACTION_COOLDOWN) {
+        lastActionTime = now;
+        return true;
+    }
+    return false;
+}
 
 function updateCursor(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
@@ -16,6 +27,7 @@ function updateCursor(clientX, clientY) {
 window.addEventListener('keydown', (e) => {
     if(gamePaused) return;
     const k = e.key;
+    
     // WASD (английская раскладка)
     if(k === 'w' || k === 'W') moveInput.up = true;
     if(k === 's' || k === 'S') moveInput.down = true;
@@ -27,19 +39,34 @@ window.addEventListener('keydown', (e) => {
     if(k === 'ф' || k === 'Ф') moveInput.left = true;
     if(k === 'в' || k === 'В') moveInput.right = true;
     
-    if(k === ' ') { e.preventDefault(); dashAction(); }
-    if(k === '1') { e.preventDefault(); castBoneShot(); }
-    if(k === '2') { e.preventDefault(); castGasterBlaster(); }
-    if(k === '3') { e.preventDefault(); castBoneVolley(); }
-    if(k === 'r' || k === 'R') { resetGame(); addFloatingText("❤️ ЗДОРОВЬЕ ВОССТАНОВЛЕНО", player.x-80, player.y-40, "#aaffaa", true); }
+    // АТАКИ С КУЛДАУНОМ
+    if(k === '1') { e.preventDefault(); if(canPerformAction()) castBoneShot(); }
+    if(k === '2') { e.preventDefault(); if(canPerformAction()) castGasterBlaster(); }
+    if(k === '3') { e.preventDefault(); if(canPerformAction()) castBoneVolley(); }
+    
+    // РЫВОК
+    if(k === ' ') { e.preventDefault(); if(canPerformAction()) dashAction(); }
+    
+    // РЕГЕНЕРАЦИЯ (R - английская, К - русская)
+    if(k === 'r' || k === 'R' || k === 'к' || k === 'К') { 
+        e.preventDefault(); 
+        if(!isDead) {
+            resetGame(); 
+            addFloatingText("❤️ ЗДОРОВЬЕ ВОССТАНОВЛЕНО", player.x-80, player.y-40, "#aaffaa", true);
+        } else {
+            addFloatingText("❌ НЕЛЬЗЯ ВОСКРЕСНУТЬ ВО ВРЕМЯ СМЕРТИ", player.x-100, player.y-40, "#ff8888", true);
+        }
+    }
     
     // ОТЛАДОЧНАЯ ФУНКЦИЯ: отнимаем 1 HP при нажатии G или П
     if(k === 'g' || k === 'G' || k === 'п' || k === 'П') { 
         e.preventDefault(); 
-        player.hp = Math.max(0, player.hp - 1); 
-        updateHealthUI(); 
-        addFloatingText("-1 HP", player.x, player.y-30, "#ff8888", true); 
-        player.invincible = 15;
+        if(!isDead) {
+            player.hp = Math.max(0, player.hp - 1); 
+            updateHealthUI(); 
+            addFloatingText("-1 HP", player.x, player.y-30, "#ff8888", true); 
+            player.invincible = 15;
+        }
     }
 });
 
@@ -208,5 +235,5 @@ function initPlatform() {
     updateHealthUI();
     updateDashUI();
     updateCooldownUI();
-    console.log("ПК версия загружена (плавное движение, отладка: G/П - минус 1 HP)");
+    console.log("ПК версия загружена (кулдаун 0.1с, реген на R/К, смерть с респавном)");
 }
