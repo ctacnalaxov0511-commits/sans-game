@@ -22,6 +22,9 @@ let windowOpen = false;
 // Глобальная переменная для позиции курсора (ПК) или направления (мобила)
 let cursorWorld = { x: 0, y: 0 };
 
+// Флаг мобильного устройства (устанавливается в mobile.js)
+let isMobileDevice = false;
+
 // Переменные для анимации деревьев
 let lastAnimUpdate = 0;
 const ANIM_SPEED = 400; // 400 мс между кадрами
@@ -605,7 +608,10 @@ function castGasterBlaster() {
     spawnX = Math.min(Math.max(spawnX, 80), MAP_W - 80);
     spawnY = Math.min(Math.max(spawnY, 80), MAP_H - 80);
     
-    createFireworkExplosion(spawnX, spawnY, 'star');
+    // Фейерверки только для ПК
+    if(!isMobileDevice) {
+        createFireworkExplosion(spawnX, spawnY, 'star');
+    }
     
     activeGasterBlasters.push(new GasterBlaster(spawnX, spawnY, targetX, targetY));
     addFloatingText("💀 GASTER BLASTER 💀", spawnX-40, spawnY-30, "#ffaa77", true);
@@ -661,8 +667,11 @@ function handleCollisions() {
             addLightSource(dummyObj.x, dummyObj.y, 60, [255,160,90], 0.45);
             dummyShake = 10;
             
-            const fireworkType = fireworkTypes[Math.floor(Math.random() * fireworkTypes.length)];
-            createFireworkExplosion(dummyObj.x, dummyObj.y, fireworkType);
+            // Фейерверки только для ПК
+            if(!isMobileDevice) {
+                const fireworkType = fireworkTypes[Math.floor(Math.random() * fireworkTypes.length)];
+                createFireworkExplosion(dummyObj.x, dummyObj.y, fireworkType);
+            }
             
             projectiles.splice(i,1);
         }
