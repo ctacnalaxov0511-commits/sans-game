@@ -1,4 +1,4 @@
-// ========== shared.js — ОБЩАЯ ЛОГИКА (карта, физика, атаки, отрисовка) ==========
+// ========== shared.js — ОБЩАЯ ЛОГИКА ==========
 // GitTale v0.0.5
 
 const canvas = document.getElementById('gameCanvas');
@@ -429,6 +429,18 @@ function addFloatingText(msg, x, y, color="#fff0b5", isWorld = true) { effects.p
 function addDashSparks(x, y) {
     for(let i = 0; i < 6; i++) {
         effects.push({ type: "spark", x: x + (Math.random() - 0.5) * 35, y: y + (Math.random() - 0.5) * 35, life: 12, vx: (Math.random() - 0.5) * 3.5, vy: (Math.random() - 0.5) * 3.5 - 1.5, isWorld: true });
+    }
+}
+
+function updateEffects() {
+    for(let i = effects.length-1; i >= 0; i--) {
+        const e = effects[i];
+        e.life--;
+        if(e.type === "spark") { 
+            e.x += e.vx; 
+            e.y += e.vy; 
+        }
+        if(e.life <= 0) effects.splice(i,1);
     }
 }
 
