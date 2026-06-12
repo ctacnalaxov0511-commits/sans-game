@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>GitTale | Мобильная версия</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="version-info">GitTale v0.0.5 (Mobile)</div>
+    
+    <div id="mobileControls" class="mobile-controls">
+        <div class="joystick-container">
+            <div class="joystick-base" id="joystickBase">
+                <div class="joystick-thumb" id="joystickThumb"></div>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button class="action-btn skill-btn" data-skill="1">1<br><span>КОСТЬ</span></button>
+            <button class="action-btn skill-btn" data-skill="2">2<br><span>ГАСТЕР</span></button>
+            <button class="action-btn skill-btn" data-skill="3">3<br><span>ЗАЛП</span></button>
+        </div>
+    </div>
+    
+    <button id="menuButton" class="menu-button">☰</button>
+    
+    <div id="menuWindow" class="menu-window">
+        <div class="menu-window-header"><h3>📋 МЕНЮ</h3></div>
+        <div class="menu-window-content">
+            <button id="resumeGameBtn" class="menu-btn resume-btn">▶ ВЕРНУТЬСЯ</button>
+            <button id="exitGameBtn" class="menu-btn exit-btn">🚪 ВЫЙТИ</button>
+        </div>
+    </div>
+    
+    <div id="infoWindow" class="ui-window">
+        <div class="ui-window-header"><h3>📜 СТАТИСТИКА</h3><button class="ui-window-close">✕</button></div>
+        <div class="ui-window-content">
+            <p>Попаданий: <span id="statHits">0</span></p>
+            <p>Всего урона: <span id="statDamage">0</span></p>
+            <p>Гастеров: <span id="statGaster">0</span></p>
+            <hr><p>💡 Клик по лампе</p>
+            <p>📌 Нажми E у таблички</p>
+        </div>
+    </div>
+    
+    <div id="loader">🔥 ЗАГРУЗКА...</div>
+    
+    <script src="js/shared.js"></script>
+    <script src="js/mobile.js"></script>
+</body>
+</html>
