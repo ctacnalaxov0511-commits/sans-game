@@ -1,5 +1,5 @@
 // ========== shared.js — ОБЩАЯ ЛОГИКА ==========
-// GitTale v0.1.0
+// GitTale v0.1.1
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -40,6 +40,10 @@ let acceleration = 0.45;      // Ускорение при нажатии
 let friction = 0.93;          // Трение при отпускании
 let maxSpeed = 6.2;           // Максимальная скорость
 
+// Переменные для смерти и респавна
+let deathMessageTimer = 0;
+let isDead = false;
+
 function startAttackAnimation() {
     attackAnimTimer = ATTACK_ANIM_DURATION;
 }
@@ -53,6 +57,48 @@ function worldToScreen(wx, wy) { return { x: wx - camera.x, y: wy - camera.y }; 
 function isOnScreen(wx, wy, margin = 100) {
     return (wx + margin > camera.x && wx - margin < camera.x + SCREEN_W &&
             wy + margin > camera.y && wy - margin < camera.y + SCREEN_H);
+}
+
+// ========== СМЕРТЬ И РЕСПАВН ==========
+function killPlayer() {
+    if(isDead) return;
+    isDead = true;
+    player.hp = 0;
+    updateHealthUI();
+    deathMessageTimer = 90; // 1.5 секунды
+    addFloatingText("💀 ВЫ ПОГИБЛИ 💀", player.x, player.y-50, "#ff6666", true);
+    player.invincible = 90;
+    velocity = { x: 0, y: 0 };
+    dash.active = false;
+    dash.duration = 0;
+}
+
+function respawnPlayer() {
+    isDead = false;
+    player.hp = player.maxHp;
+    player.x = MAP_W/2;
+    player.y = MAP_H/2;
+    player.invincible = 60;
+    velocity = { x: 0, y: 0 };
+    dash.active = false;
+    dash.duration = 0;
+    dash.cooldown = 0;
+    dash.canDash = true;
+    updateHealthUI();
+    addFloatingText("❤️ ВОСКРЕШЕНИЕ", player.x, player.y-40, "#aaffaa", true);
+    updateCamera();
+}
+
+function checkPlayerDeath() {
+    if(player.hp <= 0 && !isDead) {
+        killPlayer();
+    }
+    if(isDead && deathMessageTimer > 0) {
+        deathMessageTimer--;
+        if(deathMessageTimer <= 0) {
+            respawnPlayer();
+        }
+    }
 }
 
 // ========== ЗАГРУЗКА СПРАЙТОВ ==========
@@ -774,6 +820,8 @@ function resetGame() {
     dash.canDash = true;
     dash.trailPositions = [];
     dash.afterImages = [];
+    isDead = false;
+    deathMessageTimer = 0;
     if(typeof updateHealthUI === 'function') updateHealthUI(); 
     if(typeof updateDashUI === 'function') updateDashUI();
     updateCamera();
@@ -885,6 +933,7 @@ function gameUpdate(currentTime) {
     updateLightSources();
     updateLampGradients();
     updateTreeAnimation(currentTime);
+    checkPlayerDeath();
     
     if(attackAnimTimer > 0) {
         attackAnimTimer--;
