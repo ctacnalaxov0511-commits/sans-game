@@ -1,6 +1,9 @@
 // ========== mobile.js — МОБИЛЬНОЕ УПРАВЛЕНИЕ ==========
 // GitTale v0.1.0
 
+// ОТКЛЮЧАЕМ ФЕЙЕРВЕРКИ НА МОБИЛЬНЫХ УСТРОЙСТВАХ
+isMobileDevice = true;
+
 const mobileControls = document.getElementById('mobileControls');
 if(mobileControls) mobileControls.classList.add('visible');
 
@@ -88,19 +91,55 @@ joystickBase.addEventListener('touchstart', (e) => {
     lastTap = now;
 });
 
-// HUD ДЛЯ МОБИЛЬНЫХ
-function updateHealthUI() { const el = document.getElementById('hpValue'); if(el) el.innerText = player.hp; }
-function updateDashUI() { /* не отображается на мобильных */ }
-function updateCooldownUI() { /* не отображается на мобильных */ }
+// HUD ДЛЯ МОБИЛЬНЫХ (только здоровье)
+function updateHealthUI() { 
+    const el = document.getElementById('hpValue'); 
+    if(el) el.innerText = player.hp; 
+}
+
+function updateDashUI() { 
+    // Не отображается на мобильных
+}
+
+function updateCooldownUI() { 
+    // Не отображается на мобильных
+}
 
 // ОКНО СТАТИСТИКИ
 const infoWindow = document.getElementById('infoWindow');
 const closeBtn = document.querySelector('.ui-window-close');
-function openInfoWindow() { if(!windowOpen) { updateStatsUI(); infoWindow.style.display = 'flex'; windowOpen = true; } }
-function closeInfoWindow() { infoWindow.style.display = 'none'; windowOpen = false; }
+
+function openInfoWindow() { 
+    if(!windowOpen) { 
+        updateStatsUI(); 
+        infoWindow.style.display = 'flex'; 
+        windowOpen = true; 
+    } 
+}
+
+function closeInfoWindow() { 
+    infoWindow.style.display = 'none'; 
+    windowOpen = false; 
+}
+
 if(closeBtn) closeBtn.addEventListener('click', closeInfoWindow);
-window.addEventListener('click', (e) => { if(windowOpen && !infoWindow.contains(e.target) && e.target !== canvas) closeInfoWindow(); });
-window.addEventListener('keydown', (e) => { if(e.key === 'e' || e.key === 'E') { if(isPlayerNearSign() && !windowOpen) { e.preventDefault(); openInfoWindow(); } else if(windowOpen) { closeInfoWindow(); } } });
+
+// Закрытие по клику вне окна
+window.addEventListener('click', (e) => { 
+    if(windowOpen && !infoWindow.contains(e.target) && e.target !== canvas) closeInfoWindow(); 
+});
+
+// Клавиша E для открытия статистики (на случай подключенной клавиатуры)
+window.addEventListener('keydown', (e) => { 
+    if(e.key === 'e' || e.key === 'E') { 
+        if(isPlayerNearSign() && !windowOpen) { 
+            e.preventDefault(); 
+            openInfoWindow(); 
+        } else if(windowOpen) { 
+            closeInfoWindow(); 
+        } 
+    } 
+});
 
 // МЕНЮ
 const menuButton = document.getElementById('menuButton');
@@ -109,14 +148,45 @@ const resumeBtn = document.getElementById('resumeGameBtn');
 const exitBtn = document.getElementById('exitGameBtn');
 let isMenuOpen = false;
 
-function openMenu() { if(isMenuOpen) return; isMenuOpen = true; gamePaused = true; menuWindow.style.display = 'flex'; const overlay = document.createElement('div'); overlay.id = 'menuOverlay'; overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;`; document.body.appendChild(overlay); }
-function closeMenu() { if(!isMenuOpen) return; isMenuOpen = false; gamePaused = false; menuWindow.style.display = 'none'; const overlay = document.getElementById('menuOverlay'); if(overlay) overlay.remove(); }
-if(resumeBtn) resumeBtn.addEventListener('click', closeMenu);
-if(exitBtn) exitBtn.addEventListener('click', () => { if(confirm('Выйти?')) { window.close(); window.location.href = "about:blank"; } });
-if(menuButton) menuButton.addEventListener('click', openMenu);
-window.addEventListener('keydown', (e) => { if(e.key === 'Escape') { if(isMenuOpen) closeMenu(); else openMenu(); } });
+function openMenu() { 
+    if(isMenuOpen) return; 
+    isMenuOpen = true; 
+    gamePaused = true; 
+    menuWindow.style.display = 'flex'; 
+    const overlay = document.createElement('div'); 
+    overlay.id = 'menuOverlay'; 
+    overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;`; 
+    document.body.appendChild(overlay); 
+}
 
+function closeMenu() { 
+    if(!isMenuOpen) return; 
+    isMenuOpen = false; 
+    gamePaused = false; 
+    menuWindow.style.display = 'none'; 
+    const overlay = document.getElementById('menuOverlay'); 
+    if(overlay) overlay.remove(); 
+}
+
+if(resumeBtn) resumeBtn.addEventListener('click', closeMenu);
+if(exitBtn) exitBtn.addEventListener('click', () => { 
+    if(confirm('Вы уверены, что хотите выйти из игры?')) { 
+        window.close(); 
+        window.location.href = "about:blank"; 
+    } 
+});
+if(menuButton) menuButton.addEventListener('click', openMenu);
+
+// Escape для меню
+window.addEventListener('keydown', (e) => { 
+    if(e.key === 'Escape') { 
+        if(isMenuOpen) closeMenu(); 
+        else openMenu(); 
+    } 
+});
+
+// ========== ИНИЦИАЛИЗАЦИЯ МОБИЛЬНОЙ ВЕРСИИ ==========
 function initPlatform() {
     updateHealthUI();
-    console.log("Мобильная версия загружена (плавное движение)");
+    console.log("Мобильная версия загружена (фейерверки ОТКЛЮЧЕНЫ, плавное движение)");
 }
